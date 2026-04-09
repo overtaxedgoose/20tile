@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --green: #00ff41;
+  --green-dim: #00c830;
+  --green-muted: #008f28;
+  --green-dark: #003b10;
+  --bg: #000000;
+  --bg-panel: #050f05;
+  --border: #1a4d1a;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--green);
+  font-family: "Courier New", Courier, monospace;
+}
+
+/* CRT scanline overlay */
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 65, 0.012) 2px,
+    rgba(0, 255, 65, 0.012) 4px
+  );
+  z-index: 9999;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--green-dark); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--green-muted); }
+
+/* Text glow utility */
+.text-glow {
+  text-shadow: 0 0 8px currentColor, 0 0 20px currentColor;
+}
+
+/* Animations defined in tailwind.config.ts → theme.extend.keyframes */
