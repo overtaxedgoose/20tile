@@ -12,7 +12,7 @@ import {
 
   formatElapsedTime,
   shuffleArray,
-  JUNIOR_WORD_GOAL,
+
   type JuniorPuzzle,
   type ValidatedWord,
 } from "@/lib/junior-word-engine";
@@ -393,6 +393,7 @@ function CompletionModal({
   puzzle,
   puzzleStats,
   elapsedSeconds,
+  puzzleNumber,
   onDismiss,
   onKeepPlaying,
 }: {
@@ -401,6 +402,7 @@ function CompletionModal({
   puzzle: JuniorPuzzle;
   puzzleStats: { totalWords: number; maxScore: number } | null;
   elapsedSeconds: number;
+  puzzleNumber?: number;
   onDismiss: () => void;
   onKeepPlaying: () => void;
 }) {
@@ -411,15 +413,19 @@ function CompletionModal({
   const otherWords = words.filter((w) => !w.isQuartile);
   const allWordsFound = puzzleStats != null && words.length >= puzzleStats.totalWords;
 
+  const puzzleUrl = puzzleNumber
+    ? `20tile.app/junior/play/${puzzleNumber}`
+    : "20tile.app/junior";
+
   const shareText = [
-    "20TILE JR",
-    puzzleStats ? `Score: ${score}/${puzzleStats.maxScore} pts` : `Score: ${score} pts`,
+    "🟦🟨🟩 20TILE JR 🟩🟨🟦",
     "",
-    `Found ${words.length} words${allWordsFound ? " — ALL of them! 🏆" : ""}`,
-    `3tiles: ${found3Tiles.size}/5`,
-    `⏱ ${formatElapsedTime(elapsedSeconds)}`,
+    puzzleStats ? `⭐ ${score}/${puzzleStats.maxScore} pts` : `⭐ ${score} pts`,
+    `📝 ${words.length} words${allWordsFound ? " — ALL of them! 🏆" : ""}`,
+    `🌟 3tiles: ${found3Tiles.size}/5`,
+    `⏱️ ${formatElapsedTime(elapsedSeconds)}`,
     "",
-    "20tile.app/junior",
+    puzzleUrl,
   ].join("\n");
 
   const handleCopy = async () => {
@@ -441,7 +447,7 @@ function CompletionModal({
         <div className="text-center space-y-1">
           <p className="text-4xl">{allWordsFound ? "🏆" : "🎉"}</p>
           <h2 className="text-xl font-bold tracking-widest font-mono text-sky-700">
-            {allWordsFound ? "ALL WORDS FOUND!" : "15 WORDS!"}
+            ALL WORDS FOUND!
           </h2>
           <p className="text-xs tracking-widest text-slate-700">
             {found3Tiles.size}/5 3tiles · {words.length} words found
@@ -654,11 +660,8 @@ export default function PlayGameJunior({
     return counts;
   }, [puzzle, wordSet, found3Tiles.size]);
 
-  // Effective word goal: min(15, totalWords in this puzzle).
-  // A puzzle with only 11 discoverable words uses 11 as the goal, not 15.
-  const effectiveGoal = puzzleStats
-    ? Math.min(JUNIOR_WORD_GOAL, puzzleStats.totalWords)
-    : JUNIOR_WORD_GOAL;
+  // Effective word goal: all discoverable words in this puzzle.
+  const effectiveGoal = puzzleStats?.totalWords ?? 0;
 
   // Auto-finish: trigger once when effectiveGoal words are hit.
   // Using a ref so this never re-fires after the player clicks "Keep Playing".
@@ -666,7 +669,7 @@ export default function PlayGameJunior({
     if (
       puzzleStats &&
       discoveredWords.length > 0 &&
-      discoveredWords.length >= Math.min(JUNIOR_WORD_GOAL, puzzleStats.totalWords) &&
+      discoveredWords.length >= puzzleStats.totalWords &&
       !completionTriggeredRef.current
     ) {
       completionTriggeredRef.current = true;
@@ -817,6 +820,7 @@ export default function PlayGameJunior({
           puzzle={puzzle}
           puzzleStats={puzzleStats}
           elapsedSeconds={elapsedSeconds}
+          puzzleNumber={puzzleNumber}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
           onKeepPlaying={() => setShowCompletion(false)}
         />

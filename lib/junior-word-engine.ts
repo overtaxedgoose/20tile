@@ -2,7 +2,7 @@
  * 20Tile Junior Word Engine
  * 3-tile variant: seeds are 6–10 letters split into 3 tiles (2–4 letters each).
  * Scoring: 1pt / 2pt / 3pt for 1 / 2 / 3 tiles.
- * Completion: triggered when 15 words have been discovered.
+ * Completion: triggered when all discoverable words have been found.
  */
 
 // ─── Imports & re-exports ─────────────────────────────────────────────────────
@@ -26,7 +26,6 @@ export interface JuniorPuzzle {
 export const JUNIOR_TILES_PER_SEED = 3;
 export const JUNIOR_MIN_SEED_LENGTH = 6;
 export const JUNIOR_MAX_SEED_LENGTH = 10;
-export const JUNIOR_WORD_GOAL = 15;
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
@@ -258,10 +257,6 @@ export function getFound3Tiles(
   return found;
 }
 
-/** Junior puzzle is "complete" when 15 words have been discovered */
-export function isJuniorComplete(discoveredWords: ValidatedWord[]): boolean {
-  return discoveredWords.length >= JUNIOR_WORD_GOAL;
-}
 
 // ─── URL encoding / decoding ──────────────────────────────────────────────────
 

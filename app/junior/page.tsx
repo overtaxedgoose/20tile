@@ -53,7 +53,7 @@ export default function JuniorHome() {
         <div className="border-t border-slate-300" />
 
         <p className="text-xs leading-relaxed text-slate-600">
-          Junior puzzles use 3-tile seed words (instead of 4). Find 15 words to complete
+          Junior puzzles use 3-tile seed words (instead of 4). Find all the words to complete
           a puzzle. Tiles are shorter and easier to combine!
         </p>
 
