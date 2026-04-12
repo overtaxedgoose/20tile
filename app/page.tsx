@@ -37,6 +37,25 @@ export default function Home() {
 
         <div className="border-t" style={{ borderColor: "var(--border)" }} />
 
+        {/* Junior mode */}
+        <div className="space-y-3">
+          <p className="text-xs tracking-widest" style={{ color: "var(--green-dark)" }}>
+            JUNIOR MODE
+          </p>
+          <Link
+            href="/junior"
+            className="block w-full py-3 px-6 border text-center tracking-widest uppercase text-sm font-mono transition-all"
+            style={{ borderColor: "#0369a1", color: "#0369a1", borderRadius: "8px" }}
+          >
+            🧩 20TILE JR
+          </Link>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--green-dark)" }}>
+            3-tile words · shorter puzzles · kid-friendly
+          </p>
+        </div>
+
+        <div className="border-t" style={{ borderColor: "var(--border)" }} />
+
         {/* SEO-friendly description */}
         <p className="text-xs leading-relaxed" style={{ color: "var(--green-dark)" }}>
           20Tile is a free quartile puzzle builder. Pick 5 words, and we split

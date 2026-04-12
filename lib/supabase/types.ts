@@ -15,6 +15,18 @@ export interface PuzzleRow {
   published_at: string;
 }
 
+export interface JuniorPuzzleRow {
+  id: string;
+  number: number;
+  tiles: string;        // raw "|" and "," encoded string, 3 tiles per seed
+  seed_words: string[];
+  title: string | null;
+  creator_name: string | null;
+  status: PuzzleStatus;
+  play_count: number;
+  published_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -32,10 +44,25 @@ export interface Database {
         Update: Partial<PuzzleRow>;
         Relationships: [];
       };
+      junior_puzzles: {
+        Row: JuniorPuzzleRow;
+        Insert: Omit<JuniorPuzzleRow, "id" | "number" | "play_count" | "published_at"> & {
+          id?: string;
+          number?: number;
+          play_count?: number;
+          published_at?: string;
+        };
+        Update: Partial<JuniorPuzzleRow>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       increment_play_count: {
+        Args: { puzzle_id: string };
+        Returns: undefined;
+      };
+      increment_junior_play_count: {
         Args: { puzzle_id: string };
         Returns: undefined;
       };
