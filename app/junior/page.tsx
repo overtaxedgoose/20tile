@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ReportWordButton } from "../components/ReportWordModal";
 
 export default function JuniorHome() {
   return (
@@ -56,6 +57,11 @@ export default function JuniorHome() {
           Junior puzzles use 3-tile seed words (instead of 4). Find all the words to complete
           a puzzle. Tiles are shorter and easier to combine!
         </p>
+
+        {/* Word report */}
+        <div className="pt-2">
+          <ReportWordButton defaultSection="junior" />
+        </div>
 
       </div>
     </main>

@@ -1,5 +1,19 @@
 export type PuzzleStatus = "published" | "hidden";
 
+export type WordReportSection = "regular" | "junior";
+export type WordReportIssueType = "remove" | "add";
+export type WordReportStatus = "open" | "resolved";
+
+export interface WordReportRow {
+  id: string;
+  section: WordReportSection;
+  issue_type: WordReportIssueType;
+  word: string;
+  notes: string | null;
+  status: WordReportStatus;
+  created_at: string;
+}
+
 export interface PuzzleRow {
   id: string;
   number: number;
@@ -54,6 +68,16 @@ export interface Database {
           published_at?: string;
         };
         Update: Partial<JuniorPuzzleRow>;
+        Relationships: [];
+      };
+      word_reports: {
+        Row: WordReportRow;
+        Insert: Omit<WordReportRow, "id" | "status" | "created_at"> & {
+          id?: string;
+          status?: WordReportStatus;
+          created_at?: string;
+        };
+        Update: Partial<WordReportRow>;
         Relationships: [];
       };
     };

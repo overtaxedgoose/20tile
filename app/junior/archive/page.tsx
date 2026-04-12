@@ -68,8 +68,9 @@ export default async function JuniorArchivePage() {
               <Link
                 key={p.id}
                 href={`/junior/play/${p.number}`}
-                className="block border-2 border-slate-200 rounded-xl px-4 py-3 transition-all hover:border-sky-300 hover:bg-white group bg-white/80 shadow-sm"
+                className="block border-2 border-slate-200 rounded-xl px-4 py-3 transition-all hover:border-sky-300 hover:bg-white group bg-white/80 shadow-sm space-y-2"
               >
+                {/* Top row: title + meta */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-2 flex-wrap">
@@ -86,19 +87,24 @@ export default async function JuniorArchivePage() {
                   </div>
 
                   <div className="flex-none flex flex-col items-end gap-1">
-                    <span className="text-[10px] font-mono tracking-wider text-slate-600">
+                    <span className="text-[10px] font-mono tracking-wider text-slate-500">
                       {p.play_count} play{p.play_count !== 1 ? "s" : ""}
                     </span>
-                    {p.balloon_count > 0 && (
-                      <span className="text-[10px] font-mono tracking-wider text-sky-500">
-                        🎈 {p.balloon_count}
-                      </span>
-                    )}
                     <span className="text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity text-sky-600 font-bold">
                       PLAY →
                     </span>
                   </div>
                 </div>
+
+                {/* Balloon row */}
+                {p.balloon_count > 0 && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                    <span className="text-lg leading-none">🎈</span>
+                    <span className="text-sm font-bold font-mono text-sky-500">
+                      {p.balloon_count} balloon{p.balloon_count !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                )}
               </Link>
             ))}
           </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ReportWordButton } from "./components/ReportWordModal";
 
 export default function Home() {
   return (
@@ -62,6 +63,11 @@ export default function Home() {
           them into tiles your friends have to reassemble — your own custom
           quartile game, shareable with a link.
         </p>
+
+        {/* Word report */}
+        <div className="pt-2">
+          <ReportWordButton defaultSection="regular" />
+        </div>
 
       </div>
     </main>
