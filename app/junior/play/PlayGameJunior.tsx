@@ -426,6 +426,8 @@ function CompletionModal({
   const tile3Words = words.filter((w) => w.isQuartile);
   const otherWords = words.filter((w) => !w.isQuartile);
   const allWordsFound = puzzleStats != null && words.length >= puzzleStats.totalWords;
+  const total3TileWords = puzzleStats?.t3 ?? 5;
+  const found3TileCount = words.filter((w) => w.points === 3).length;
 
   const puzzleUrl = puzzleNumber
     ? `20tile.app/junior/play/${puzzleNumber}`
@@ -436,7 +438,7 @@ function CompletionModal({
     "",
     puzzleStats ? `⭐ ${score}/${puzzleStats.maxScore} pts` : `⭐ ${score} pts`,
     `📝 ${words.length} words${allWordsFound ? " — ALL of them! 🏆" : ""}`,
-    `🌟 3tiles: ${found3Tiles.size}/5`,
+    `🌟 3tiles: ${found3TileCount}/${total3TileWords}`,
     `⏱️ ${formatElapsedTime(elapsedSeconds)}`,
     "",
     puzzleUrl,
@@ -464,7 +466,7 @@ function CompletionModal({
             ALL WORDS FOUND!
           </h2>
           <p className="text-xs tracking-widest text-slate-700">
-            {found3Tiles.size}/5 3tiles · {words.length} words found
+            {found3TileCount}/{total3TileWords} 3tiles · {words.length} words found
           </p>
         </div>
 
