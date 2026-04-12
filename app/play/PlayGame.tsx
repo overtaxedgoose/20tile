@@ -7,7 +7,7 @@ import {
   loadWordSet,
   evaluateSelection,
   getFoundQuartiles,
-  isPuzzleComplete,
+  computePuzzleStats,
   generateShareCard,
   shuffleArray,
   type Puzzle,
@@ -61,12 +61,14 @@ function TileCell({
   let scaleCls = "";
 
   if (isLocked && isSelected && qColor) {
-    // Selected on top of a locked tile — brighten the quartile colour
+    // Selected on top of a locked tile — brighten the quartile colour.
+    // No scale transform: static transforms on grid children can cause
+    // mobile browsers to incorrectly expand the grid's layout height.
     borderCls = "border-white";
     bgCls = qColor.bg;
     textCls = "text-white";
-    shadowCls = "shadow-[0_0_14px_rgba(255,255,255,0.35)]";
-    scaleCls = "scale-105";
+    shadowCls = "shadow-[0_0_16px_rgba(255,255,255,0.5)]";
+    scaleCls = "";
   } else if (isLocked && qColor) {
     borderCls = qColor.border;
     bgCls = qColor.bg;
@@ -74,11 +76,14 @@ function TileCell({
     shadowCls = "hover:shadow-[0_0_8px_rgba(255,255,255,0.15)]";
     scaleCls = "hover:scale-105";
   } else if (isSelected) {
+    // Use a bright glow + border instead of scale to indicate selection.
+    // scale-105 as a persistent (non-hover) class causes some mobile browsers
+    // to recalculate grid row heights, expanding the tile grid on each tap.
     borderCls = "border-green-300";
     bgCls = "bg-green-900";
     textCls = "text-green-100";
-    shadowCls = "shadow-[0_0_12px_rgba(0,255,65,0.4)]";
-    scaleCls = "scale-105";
+    shadowCls = "shadow-[0_0_16px_rgba(0,255,65,0.6)]";
+    scaleCls = "";
   } else {
     borderCls = "border-green-800";
     bgCls = "bg-black";
@@ -90,7 +95,7 @@ function TileCell({
   // w-full h-full: tile fills the grid cell whose dimensions are set by the
   // grid container (not by this element). Do NOT use aspect-square here —
   // that would let tile content drive the grid row height.
-  const sizeClass = "w-full h-full text-xs sm:text-sm";
+  const sizeClass = "w-full h-full text-sm sm:text-base";
 
   return (
     <button
@@ -100,7 +105,7 @@ function TileCell({
       className={`
         relative flex items-center justify-center
         border-2 rounded-lg
-        font-mono font-bold tracking-widest uppercase
+        font-mono font-bold tracking-wide lowercase
         transition-all duration-150 select-none active:scale-95
         ${borderCls} ${bgCls} ${textCls} ${shadowCls} ${scaleCls} ${sizeClass}
         ${shake ? "animate-shake" : ""}
@@ -137,42 +142,56 @@ function StagingRow({
 }) {
   return (
     <div className="space-y-2">
-      {/* 4 staging slots — same column width as the tile grid; gap fixed (non-responsive) */}
-      <div className="grid grid-cols-4 gap-2">
-        {[0, 1, 2, 3].map((i) => {
-          const tile = selectedTiles[i];
-          if (tile) {
+      {/*
+        Staging slots — padding-top hack enforces height = 25% of width
+        (≈ one square cell wide). paddingTop % is always relative to element
+        WIDTH in CSS, so this height can never be overridden by content.
+      */}
+      <div style={{ position: "relative", paddingTop: "18%", flexShrink: 0 }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "8px",
+          }}
+        >
+          {[0, 1, 2, 3].map((i) => {
+            const tile = selectedTiles[i];
+            if (tile) {
+              return (
+                <button
+                  key={tile.id}
+                  onClick={() => onDeselect(tile.id)}
+                  aria-label={`Remove ${tile.letters} from selection`}
+                  className={`
+                    relative flex items-center justify-center
+                    border-2 border-green-300 bg-green-900 text-green-100
+                    rounded-lg font-mono font-bold tracking-wide lowercase
+                    text-sm w-full h-full
+                    transition-colors duration-150 select-none
+                    hover:bg-green-800 active:opacity-80
+                    shadow-[0_0_12px_rgba(0,255,65,0.35)]
+                    ${shaking ? "animate-shake" : ""}
+                  `}
+                >
+                  {tile.letters}
+                  <span className="absolute top-0.5 right-0.5 text-[8px] opacity-50">✕</span>
+                </button>
+              );
+            }
             return (
-              <button
-                key={tile.id}
-                onClick={() => onDeselect(tile.id)}
-                aria-label={`Remove ${tile.letters} from selection`}
-                className={`
-                  relative flex items-center justify-center
-                  border-2 border-green-300 bg-green-900 text-green-100
-                  rounded-lg font-mono font-bold tracking-widest uppercase
-                  text-xs sm:text-sm w-full aspect-square
-                  transition-all duration-150 select-none
-                  hover:bg-green-800 active:scale-95
-                  shadow-[0_0_12px_rgba(0,255,65,0.35)]
-                  ${shaking ? "animate-shake" : ""}
-                `}
+              <div
+                key={i}
+                className="w-full h-full rounded-lg border-2 border-dashed flex items-center justify-center"
+                style={{ borderColor: "var(--border)" }}
               >
-                {tile.letters}
-                <span className="absolute top-0.5 right-0.5 text-[8px] opacity-50">✕</span>
-              </button>
+                <span className="text-xs opacity-20" style={{ color: "var(--green)" }}>·</span>
+              </div>
             );
-          }
-          return (
-            <div
-              key={i}
-              className="w-full aspect-square rounded-lg border-2 border-dashed flex items-center justify-center"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <span className="text-xs opacity-20" style={{ color: "var(--green)" }}>·</span>
-            </div>
-          );
-        })}
+          })}
+        </div>
       </div>
 
       {/* Action buttons row */}
@@ -223,10 +242,14 @@ function ScoreHeader({
   score,
   discoveredCount,
   foundQuartiles,
+  maxScore,
+  totalWords,
 }: {
   score: number;
   discoveredCount: number;
   foundQuartiles: Set<number>;
+  maxScore?: number;
+  totalWords?: number;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
@@ -234,10 +257,15 @@ function ScoreHeader({
       <div className="flex items-baseline gap-3">
         <span className="text-2xl font-bold font-mono tabular-nums text-glow" style={{ color: "var(--green)" }}>
           {score}
+          {maxScore != null && (
+            <span className="text-sm font-normal" style={{ color: "var(--green-dark)" }}>
+              /{maxScore}
+            </span>
+          )}
           <span className="text-sm font-normal ml-1" style={{ color: "var(--green-muted)" }}>pts</span>
         </span>
-        <span className="text-xs" style={{ color: "var(--green-muted)" }}>
-          {discoveredCount} word{discoveredCount !== 1 ? "s" : ""}
+        <span className="text-xs font-mono" style={{ color: "var(--green-muted)" }}>
+          {discoveredCount}{totalWords != null ? `/${totalWords}` : ""} word{(totalWords ?? discoveredCount) !== 1 ? "s" : ""}
         </span>
       </div>
 
@@ -333,12 +361,65 @@ function DiscoveredWordsPanel({ words, invalidGuesses }: { words: ValidatedWord[
 
 // ─── Completion Modal ─────────────────────────────────────────────────────────
 
+const DIFFICULTY_OPTIONS = [
+  { value: 1, label: "EASY" },
+  { value: 2, label: "MEDIUM" },
+  { value: 3, label: "HARD" },
+] as const;
+
+const CLEVERNESS_OPTIONS = [
+  { value: 1, label: "MEH" },
+  { value: 2, label: "CLEVER" },
+  { value: 3, label: "GENIUS" },
+] as const;
+
 function CompletionModal({
-  score, words, puzzle, shareCard, onDismiss,
+  score, words, puzzle, shareCard, allWordsFound, puzzleId, puzzleNumber, onDismiss,
 }: {
-  score: number; words: ValidatedWord[]; puzzle: Puzzle; shareCard: string; onDismiss: () => void;
+  score: number;
+  words: ValidatedWord[];
+  puzzle: Puzzle;
+  shareCard: string;
+  allWordsFound: boolean;
+  puzzleId?: string;
+  puzzleNumber?: number;
+  onDismiss: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+
+  // Rating state
+  const ratingKey = puzzleNumber != null ? `rated_${puzzleNumber}` : null;
+  const [alreadyRated] = useState<boolean>(() => {
+    if (!ratingKey) return false;
+    try { return localStorage.getItem(ratingKey) === "1"; } catch { return false; }
+  });
+  const [ratingDifficulty, setRatingDifficulty] = useState<number | null>(null);
+  const [ratingCleverness, setRatingCleverness] = useState<number | null>(null);
+  const [ratingSubmitted, setRatingSubmitted] = useState(alreadyRated);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
+
+  const canSubmitRating = ratingDifficulty !== null && ratingCleverness !== null && !ratingSubmitted && !ratingSubmitting;
+
+  const handleSubmitRating = async () => {
+    if (!puzzleId || !canSubmitRating) return;
+    setRatingSubmitting(true);
+    setRatingError(null);
+    try {
+      const res = await fetch("/api/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ puzzleId, difficulty: ratingDifficulty, cleverness: ratingCleverness }),
+      });
+      if (!res.ok) throw new Error("server error");
+      setRatingSubmitted(true);
+      if (ratingKey) { try { localStorage.setItem(ratingKey, "1"); } catch { /* ignore */ } }
+    } catch {
+      setRatingError("Couldn't save rating. Try again?");
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
 
   const handleCopy = async () => {
     try { await navigator.clipboard.writeText(shareCard); }
@@ -360,12 +441,12 @@ function CompletionModal({
         style={{ borderColor: "var(--green-dim)", background: "var(--bg-panel)" }}>
 
         <div className="text-center space-y-1">
-          <p className="text-3xl">🏆</p>
+          <p className="text-3xl">{allWordsFound ? "🏆" : "🎯"}</p>
           <h2 className="text-xl font-bold tracking-widest text-glow font-mono" style={{ color: "var(--green)" }}>
-            PUZZLE COMPLETE
+            {allWordsFound ? "PUZZLE COMPLETE" : quartileWords.length === 5 ? "PUZZLE COMPLETE" : "GAME OVER"}
           </h2>
           <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>
-            {quartileWords.length}/5 quartiles · {words.length} words total
+            {quartileWords.length}/5 quartiles · {words.length} words found
           </p>
         </div>
 
@@ -404,6 +485,95 @@ function CompletionModal({
           </div>
         )}
 
+        {/* Rating section — only shown when puzzle has a DB ID */}
+        {puzzleId && (
+          <div className="border rounded-lg p-3 space-y-3" style={{ borderColor: "var(--border)" }}>
+            <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>
+              {ratingSubmitted ? "YOUR RATING" : "RATE THIS PUZZLE"}
+            </p>
+
+            {/* Difficulty row */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] tracking-widest font-mono" style={{ color: "var(--green-dark)" }}>DIFFICULTY</p>
+              <div className="flex gap-2">
+                {DIFFICULTY_OPTIONS.map(({ value, label }) => {
+                  const isSelected = ratingDifficulty === value;
+                  const isDisabled = ratingSubmitted;
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => !isDisabled && setRatingDifficulty(value)}
+                      disabled={isDisabled}
+                      className="flex-1 py-1.5 border text-[10px] font-mono tracking-widest uppercase rounded transition-all"
+                      style={{
+                        borderColor: isSelected ? "var(--green)" : "var(--border)",
+                        color: isSelected ? "var(--green)" : isDisabled ? "var(--green-dark)" : "var(--green-muted)",
+                        background: isSelected ? "rgba(0,255,65,0.08)" : "transparent",
+                        cursor: isDisabled ? "default" : "pointer",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Cleverness row */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] tracking-widest font-mono" style={{ color: "var(--green-dark)" }}>CLEVERNESS</p>
+              <div className="flex gap-2">
+                {CLEVERNESS_OPTIONS.map(({ value, label }) => {
+                  const isSelected = ratingCleverness === value;
+                  const isDisabled = ratingSubmitted;
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => !isDisabled && setRatingCleverness(value)}
+                      disabled={isDisabled}
+                      className="flex-1 py-1.5 border text-[10px] font-mono tracking-widest uppercase rounded transition-all"
+                      style={{
+                        borderColor: isSelected ? "#facc15" : "var(--border)",
+                        color: isSelected ? "#facc15" : isDisabled ? "var(--green-dark)" : "var(--green-muted)",
+                        background: isSelected ? "rgba(250,204,21,0.08)" : "transparent",
+                        cursor: isDisabled ? "default" : "pointer",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Submit / confirmation */}
+            {ratingSubmitted ? (
+              <p className="text-center text-xs font-mono tracking-widest" style={{ color: "var(--green-dark)" }}>
+                ✓ THANKS FOR RATING
+              </p>
+            ) : (
+              <>
+                <button
+                  onClick={handleSubmitRating}
+                  disabled={!canSubmitRating}
+                  className="w-full py-2 border text-xs font-mono tracking-widest uppercase rounded transition-all"
+                  style={{
+                    borderColor: canSubmitRating ? "var(--green)" : "var(--border)",
+                    color: canSubmitRating ? "var(--green)" : "var(--green-dark)",
+                    cursor: canSubmitRating ? "pointer" : "default",
+                    opacity: ratingSubmitting ? 0.6 : 1,
+                  }}
+                >
+                  {ratingSubmitting ? "SUBMITTING…" : "[ SUBMIT RATING ]"}
+                </button>
+                {ratingError && (
+                  <p className="text-center text-[10px] font-mono" style={{ color: "#f87171" }}>{ratingError}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         <div className="space-y-2">
           <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>SHARE CARD</p>
           <pre className="text-xs font-mono whitespace-pre p-3 rounded border leading-relaxed"
@@ -417,11 +587,27 @@ function CompletionModal({
           </button>
         </div>
 
-        <button onClick={onDismiss}
-          className="w-full py-2 border text-xs font-mono tracking-widest uppercase rounded transition-all hover:bg-green-950"
-          style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}>
-          KEEP PLAYING
-        </button>
+        <div className="space-y-2">
+          {/* Always offer a route home */}
+          <Link
+            href="/"
+            className="block w-full py-2 border text-xs font-mono tracking-widest uppercase rounded transition-all text-center hover:bg-green-950"
+            style={{ borderColor: "var(--green)", color: "var(--green)" }}
+          >
+            ← BACK TO HOME
+          </Link>
+
+          {/* Only show "keep playing" when the player finished early */}
+          {!allWordsFound && (
+            <button
+              onClick={onDismiss}
+              className="w-full py-2 border text-xs font-mono tracking-widest uppercase rounded transition-all hover:bg-green-950"
+              style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
+            >
+              KEEP PLAYING
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -429,7 +615,15 @@ function CompletionModal({
 
 // ─── Main Game Component ──────────────────────────────────────────────────────
 
-export default function PlayGame({ encodedPuzzle }: { encodedPuzzle: string | null }) {
+export default function PlayGame({
+  encodedPuzzle,
+  puzzleId,
+  puzzleNumber,
+}: {
+  encodedPuzzle: string | null;
+  puzzleId?: string;
+  puzzleNumber?: number;
+}) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   // tileOrder holds all 20 tiles in their current display slots.
   // Invariant: locked (quartile) tiles always occupy the leading slots
@@ -442,6 +636,7 @@ export default function PlayGame({ encodedPuzzle }: { encodedPuzzle: string | nu
   const [invalidGuesses, setInvalidGuesses] = useState<string[]>([]);
   const [score, setScore] = useState(0);
   const [wordSet, setWordSet] = useState<Set<string> | null>(null);
+  const [puzzleStats, setPuzzleStats] = useState<{ totalWords: number; maxScore: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -454,6 +649,32 @@ export default function PlayGame({ encodedPuzzle }: { encodedPuzzle: string | nu
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), duration);
   }, []);
+
+  // ── Progress persistence ──────────────────────────────────────────────────
+  // Key: puzzle number for DB puzzles, or first 40 chars of encoded string for URL puzzles.
+  const progressKey = puzzleNumber != null
+    ? `progress_${puzzleNumber}`
+    : encodedPuzzle ? `progress_url_${encodedPuzzle.slice(0, 40)}` : null;
+
+  const saveProgress = useCallback((
+    words: ValidatedWord[],
+    order: Tile[],
+    guesses: string[]
+  ) => {
+    if (!progressKey) return;
+    try {
+      localStorage.setItem(progressKey, JSON.stringify({
+        discoveredWords: words,
+        tileOrder: order,
+        invalidGuesses: guesses,
+      }));
+    } catch { /* storage full or unavailable */ }
+  }, [progressKey]);
+
+  const clearProgress = useCallback(() => {
+    if (!progressKey) return;
+    try { localStorage.removeItem(progressKey); } catch { /* ignore */ }
+  }, [progressKey]);
 
   // Load puzzle + word list
   useEffect(() => {
@@ -469,17 +690,67 @@ export default function PlayGame({ encodedPuzzle }: { encodedPuzzle: string | nu
       return;
     }
     setPuzzle(decoded);
-    // Shuffle on load so the seed structure isn't immediately visible
-    setTileOrder(shuffleArray([...decoded.tiles]));
+
+    // Restore saved progress if available, otherwise shuffle fresh
+    const savedKey = puzzleNumber != null
+      ? `progress_${puzzleNumber}`
+      : `progress_url_${encodedPuzzle.slice(0, 40)}`;
+    let restored = false;
+    try {
+      const raw = localStorage.getItem(savedKey);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved.discoveredWords?.length > 0) {
+          setDiscoveredWords(saved.discoveredWords);
+          setScore(saved.discoveredWords.reduce((sum: number, w: ValidatedWord) => sum + w.points, 0));
+          setInvalidGuesses(saved.invalidGuesses ?? []);
+          // Validate that saved tile order matches this puzzle before restoring
+          const savedIds = new Set((saved.tileOrder as Tile[]).map((t) => t.id));
+          const puzzleIds = new Set(decoded.tiles.map((t) => t.id));
+          const orderValid = savedIds.size === puzzleIds.size &&
+            [...savedIds].every((id) => puzzleIds.has(id));
+          setTileOrder(orderValid ? saved.tileOrder : shuffleArray([...decoded.tiles]));
+          restored = true;
+        }
+      }
+    } catch { /* corrupted save — ignore */ }
+
+    if (!restored) setTileOrder(shuffleArray([...decoded.tiles]));
+
     loadWordSet()
-      .then(setWordSet)
+      .then((ws) => {
+        setWordSet(ws);
+        setTimeout(() => {
+          const stats = computePuzzleStats(decoded, ws);
+          setPuzzleStats(stats);
+        }, 0);
+      })
       .catch(() => setError("Failed to load word list. Please refresh."))
       .finally(() => setLoading(false));
-  }, [encodedPuzzle]);
+  }, [encodedPuzzle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derived: which seed groups have a found quartile
   const foundQuartiles = puzzle ? getFoundQuartiles(discoveredWords, puzzle) : new Set<number>();
-  const complete = puzzle ? isPuzzleComplete(discoveredWords, puzzle) : false;
+
+  // Auto-finish: show completion modal as soon as every discoverable word is found
+  useEffect(() => {
+    if (
+      puzzleStats &&
+      discoveredWords.length > 0 &&
+      discoveredWords.length >= puzzleStats.totalWords &&
+      !showCompletion
+    ) {
+      clearProgress();
+      setShowCompletion(true);
+    }
+  }, [discoveredWords.length, puzzleStats, showCompletion, clearProgress]);
+
+  // Persist progress to localStorage after each change
+  useEffect(() => {
+    if (puzzle && discoveredWords.length > 0) {
+      saveProgress(discoveredWords, tileOrder, invalidGuesses);
+    }
+  }, [discoveredWords, tileOrder, invalidGuesses, puzzle, saveProgress]);
 
   // Selected tiles in tap order
   const selectedTiles = selectedIds
@@ -576,7 +847,10 @@ export default function PlayGame({ encodedPuzzle }: { encodedPuzzle: string | nu
   }, [foundQuartiles]);
 
   // Share card
-  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score) : "";
+  const puzzleUrl = puzzleNumber != null
+    ? `20tile.app/play/${puzzleNumber}`
+    : typeof window !== "undefined" ? window.location.href : "20tile.app";
+  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl) : "";
 
   // ── Render guards ────────────────────────────────────────────────────────────
 
@@ -602,49 +876,88 @@ export default function PlayGame({ encodedPuzzle }: { encodedPuzzle: string | nu
 
   return (
     <>
-      {/* Toasts — fixed positioned, zero document-flow impact */}
+      {/*
+        Toasts — position: fixed, outside all layout containers.
+        They float over the game and never affect document flow.
+      */}
       <ToastList toasts={toasts} />
 
-      {/* Completion modal — fixed overlay */}
+      {/* Completion modal — fixed overlay, outside layout */}
       {showCompletion && (
         <CompletionModal
           score={score}
           words={discoveredWords}
           puzzle={puzzle}
           shareCard={shareCard}
-          onDismiss={() => setShowCompletion(false)}
+          allWordsFound={puzzleStats != null && discoveredWords.length >= puzzleStats.totalWords}
+          puzzleId={puzzleId}
+          puzzleNumber={puzzleNumber}
+          onDismiss={() => { clearProgress(); setShowCompletion(false); }}
         />
       )}
 
       {/*
-        Fixed full-viewport layout. Every section is flex-none with a
-        deterministic height, except the discovered-words panel which is
-        flex-1 and scrolls internally. Nothing shifts at any point during play.
+        ── PAGE ROOT ────────────────────────────────────────────────────────────
+        display: flex / flex-direction: column / height: 100dvh / overflow: hidden
+        are all expressed as inline styles so they cannot be overridden by
+        Tailwind purging or specificity issues. This is the only scroll context
+        on the page — everything either fits inside it or scrolls within it.
       */}
-      <div className="h-dvh flex flex-col max-w-lg mx-auto px-3 py-4 gap-3 overflow-hidden">
+      <div
+        className="max-w-lg mx-auto"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100dvh",
+          overflow: "hidden",
+          padding: "12px",
+          gap: "8px",
+          boxSizing: "border-box",
+        }}
+      >
+        {/*
+          ── TOP SECTION ────────────────────────────────────────────────────────
+          flex: 1 + minHeight: 0   fills all viewport height MINUS the fixed
+                                   bottom strip; can shrink but never overflow
+          overflow: hidden         HARD CEILING — no child can push this taller,
+                                   regardless of game state or browser quirks
 
-        {/* Nav */}
-        <header className="flex-none flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-xs tracking-widest opacity-40 hover:opacity-100 transition-opacity"
-            style={{ color: "var(--green)" }}
-          >
-            ← 20TILE
-          </Link>
-        </header>
+          The tile grid inside uses flex: 1 + minHeight: 0 to fill whatever
+          vertical space remains after header / score / staging / buttons.
+          No aspect-ratio or padding-top tricks needed — the height is simply
+          whatever the screen gives after the bottom strip is reserved.
+        */}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          {/* Nav */}
+          <header style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+            <Link
+              href="/"
+              className="text-xs tracking-widest opacity-40 hover:opacity-100 transition-opacity font-mono"
+              style={{ color: "var(--green)" }}
+            >
+              ← 20TILE
+            </Link>
+          </header>
 
-        {/* Score + quartile progress dots */}
-        <div className="flex-none">
+          {/* Score + quartile progress dots */}
           <ScoreHeader
             score={score}
             discoveredCount={discoveredWords.length}
             foundQuartiles={foundQuartiles}
+            maxScore={puzzleStats?.maxScore}
+            totalWords={puzzleStats?.totalWords}
           />
-        </div>
 
-        {/* Staging row + action buttons */}
-        <div className="flex-none">
+          {/* Staging row (4 slots) + Shuffle / Clear / Submit buttons */}
           <StagingRow
             selectedTiles={selectedTiles}
             onDeselect={(id) => setSelectedIds((prev) => prev.filter((x) => x !== id))}
@@ -654,73 +967,83 @@ export default function PlayGame({ encodedPuzzle }: { encodedPuzzle: string | nu
             canSubmit={selectedIds.length >= 1 && !!wordSet}
             shaking={shaking}
           />
+
+          {/*
+            ── 4×5 TILE GRID ──────────────────────────────────────────────────
+            flex: 1 + minHeight: 0  fills every pixel left over in the top
+                                    section after header / score / staging.
+            overflow: hidden        tiles never leak out of the grid.
+
+            gridTemplateRows: repeat(5, 1fr)  divides the exact available
+            height into 5 equal rows; with w-full h-full tiles the cells
+            fill perfectly without influencing the container's size.
+
+            On most modern phones this produces near-square tiles. On small
+            screens (iPhone SE) tiles are slightly wider than tall but the
+            layout is perfectly stable across all game states.
+          */}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateRows: "repeat(5, 1fr)",
+              gap: "8px",
+              overflow: "hidden",
+            }}
+          >
+            {tileOrder.map((tile) => (
+              <TileCell
+                key={tile.id}
+                tile={tile}
+                isSelected={selectedIds.includes(tile.id)}
+                quartileIndex={foundQuartiles.has(tile.seedIndex) ? tile.seedIndex : null}
+                shake={shaking && selectedIds.includes(tile.id)}
+                onClick={() => handleTileTap(tile)}
+              />
+            ))}
+          </div>
         </div>
 
         {/*
-          4×5 tile grid — explicit CSS grid with a fixed height.
-
-          Height is set via aspect-ratio: 4/5 on the container. Because
-          width is fixed (100% of a max-w-lg column) and height is derived
-          only from that width, the grid is pixel-identical whether 0 or 5
-          quartiles are found. Tiles use h-full so they fill their cell
-          without pushing the container height — the container owns its size.
-
-          gap: 8px is a hard constant (not a responsive Tailwind class) so
-          it cannot cause a height change at any breakpoint.
-          overflow: hidden is a hard ceiling — no child can expand the box.
+          ── BOTTOM SECTION ─────────────────────────────────────────────────────
+          height: clamp(...)  FIXED height — never grows, never shrinks.
+                              Because this is fixed, the top section always
+                              gets a known, stable amount of vertical space.
+          overflow-y: auto    scrolls within its fixed height if word list grows
+          flexShrink: 0       won't be squeezed by the top section
         */}
         <div
-          className="flex-none w-full"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gridTemplateRows: "repeat(5, 1fr)",
+            flexShrink: 0,
+            height: "clamp(120px, 22vh, 180px)",
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
             gap: "8px",
-            aspectRatio: "4 / 5",
-            overflow: "hidden",
           }}
         >
-          {tileOrder.map((tile) => (
-            <TileCell
-              key={tile.id}
-              tile={tile}
-              isSelected={selectedIds.includes(tile.id)}
-              quartileIndex={foundQuartiles.has(tile.seedIndex) ? tile.seedIndex : null}
-              shake={shaking && selectedIds.includes(tile.id)}
-              onClick={() => handleTileTap(tile)}
-            />
-          ))}
-        </div>
-
-        {/* Discovered words — consumes all remaining vertical space, scrolls internally */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
           <DiscoveredWordsPanel words={discoveredWords} invalidGuesses={invalidGuesses} />
-        </div>
 
-        {/*
-          Bottom bar — always the same fixed height (h-10).
-          Content switches between a keyboard hint and the Finish button
-          when all quartiles are found. Never causes layout shift.
-        */}
-        <div
-          className="flex-none h-10 flex items-center justify-center border-t"
-          style={{ borderColor: "var(--border)" }}
-        >
-          {complete && !showCompletion ? (
+          {/* Show once all 5 quartiles are found but game hasn't auto-finished */}
+          {foundQuartiles.size === 5 && !showCompletion && (
             <button
               onClick={() => setShowCompletion(true)}
-              className="text-xs font-mono tracking-widest uppercase border px-4 py-1.5 rounded transition-colors hover:bg-yellow-950 whitespace-nowrap"
-              style={{ borderColor: "#854d0e", color: "#fde68a" }}
+              className="w-full py-2 border text-xs font-mono tracking-widest uppercase rounded transition-colors hover:bg-yellow-950"
+              style={{ borderColor: "#854d0e", color: "#fde68a", flexShrink: 0 }}
             >
-              🏆 [ FINISH GAME ]
+              🏆 [ FINISH PUZZLE ]
             </button>
-          ) : (
-            <p className="text-xs" style={{ color: "var(--green-dark)" }}>
-              Enter to submit · Escape to clear
-            </p>
           )}
-        </div>
 
+          <p
+            className="text-center text-xs pb-2"
+            style={{ color: "var(--green-dark)", marginTop: "auto" }}
+          >
+            Enter to submit · Escape to clear
+          </p>
+        </div>
       </div>
     </>
   );

@@ -5,8 +5,8 @@
 :root {
   --green: #00ff41;
   --green-dim: #00c830;
-  --green-muted: #008f28;
-  --green-dark: #003b10;
+  --green-muted: #00bb38;
+  --green-dark: #00963c;
   --bg: #000000;
   --bg-panel: #050f05;
   --border: #1a4d1a;
@@ -17,6 +17,8 @@ body {
   background: var(--bg);
   color: var(--green);
   font-family: "Courier New", Courier, monospace;
+  /* Prevent pull-to-refresh on mobile so players don't lose game progress */
+  overscroll-behavior: none;
 }
 
 /* CRT scanline overlay */

@@ -389,6 +389,27 @@ export async function loadWordSet(): Promise<Set<string>> {
   return cachedWordSet;
 }
 
+// ─── Puzzle stats (total discoverable words + max score) ──────────────────────
+
+/**
+ * Finds all valid words discoverable from the puzzle tiles, then returns
+ * the total word count and the maximum achievable score.
+ * Called once after the word set loads; results are cached in component state.
+ */
+export function computePuzzleStats(
+  puzzle: Puzzle,
+  wordSet: Set<string>
+): { totalWords: number; maxScore: number } {
+  const allWords = findAllValidWords(puzzle, wordSet);
+  let maxScore = 0;
+  for (const [, paths] of allWords) {
+    if (paths.length > 0) {
+      maxScore += scoreForTileCount(paths[0].length);
+    }
+  }
+  return { totalWords: allWords.size, maxScore };
+}
+
 // ─── Completion check ─────────────────────────────────────────────────────────
 
 /**
@@ -421,7 +442,8 @@ export function isPuzzleComplete(
 export function generateShareCard(
   discoveredWords: ValidatedWord[],
   puzzle: Puzzle,
-  score: number
+  score: number,
+  puzzleUrl?: string
 ): string {
   const quartileEmojis = ["🟩", "🟦", "🟨", "🟧", "🟥"];
   const foundQuartiles = getFoundQuartiles(discoveredWords, puzzle);
@@ -441,7 +463,7 @@ export function generateShareCard(
   lines.push(emojiRow);
   lines.push("");
   lines.push(`${discoveredWords.length} words found`);
-  lines.push("Play at 20tile.app");
+  lines.push(puzzleUrl ?? "20tile.app");
 
   return lines.join("\n");
 }

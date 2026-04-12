@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   autoSplitWord,
   findAllValidWords,
@@ -11,6 +12,7 @@ import {
   type Puzzle,
   type Tile,
 } from "@/lib/word-engine";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -448,16 +450,27 @@ function makeSeedState(word: string): SeedState {
   };
 }
 
+type PublishStage = "idle" | "form" | "submitting" | "published" | "error";
+
 export default function CreatePage() {
+  const router = useRouter();
   const [seeds, setSeeds] = useState<SeedState[]>(
     Array.from({ length: SEED_COUNT }, () => makeSeedState(""))
   );
   const [wordSet, setWordSet] = useState<Set<string> | null>(null);
   const [validation, setValidation] = useState<ValidationState | null>(null);
-  const [publishUrl, setPublishUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [validating, setValidating] = useState(false);
   const validationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Publish flow state ───────────────────────────────────────────────────────
+  const [publishStage, setPublishStage] = useState<PublishStage>("idle");
+  const [puzzleTitle, setPuzzleTitle] = useState("");
+  const [creatorName, setCreatorName] = useState("");
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishedNumber, setPublishedNumber] = useState<number | null>(null);
+  const [publishedLinkCopied, setPublishedLinkCopied] = useState(false);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [fallbackCopied, setFallbackCopied] = useState(false);
 
   // Load word list once
   useEffect(() => {
@@ -483,7 +496,8 @@ export default function CreatePage() {
       return next;
     });
     setValidation(null);
-    setPublishUrl(null);
+    setPublishStage("idle");
+    setFallbackUrl(null);
   }, []);
 
   // Handle split-boundary shifts
@@ -500,7 +514,8 @@ export default function CreatePage() {
         return next;
       });
       setValidation(null);
-      setPublishUrl(null);
+      setPublishStage("idle");
+      setFallbackUrl(null);
     },
     []
   );
@@ -637,46 +652,80 @@ export default function CreatePage() {
     setValidating(false);
   }, [allSeedsReady, seeds, wordSet]);
 
-  // Generate shareable URL
-  const handlePublish = useCallback(() => {
-    if (!allSeedsReady) return;
-    const fakeTiles: Tile[][] = seeds.map((s, si) =>
-      s.tiles.map((letters, ti) => ({
-        id: `s${si}-t${ti}`,
-        letters,
-        seedIndex: si,
-        tileIndex: ti,
-      }))
-    );
-    const puzzle: Puzzle = {
-      tiles: fakeTiles.flat(),
-      seedWords: seeds.map((s) => s.clean),
-      seedTiles: fakeTiles,
-    };
-    const encoded = encodePuzzle(puzzle);
-    const url = `${window.location.origin}/play?p=${encoded}`;
-    setPublishUrl(url);
-  }, [allSeedsReady, seeds]);
+  // Open the publish name-entry form
+  const handleOpenPublishForm = useCallback(() => {
+    if (!validation?.ok) return;
+    setPublishStage("form");
+    setPublishError(null);
+    setFallbackUrl(null);
+  }, [validation]);
 
-  // Copy URL to clipboard
-  const handleCopy = useCallback(async () => {
-    if (!publishUrl) return;
+  // Submit to Supabase; fall back to URL if unavailable
+  const handleSubmitPublish = useCallback(async () => {
+    if (!allSeedsReady) return;
+    setPublishStage("submitting");
+    setPublishError(null);
+
+    // Raw tiles string stored in DB — NOT url-encoded
+    const rawTiles = seeds.map((s) => s.tiles.join("|")).join(",");
+
     try {
-      await navigator.clipboard.writeText(publishUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("puzzles")
+        .insert({
+          tiles: rawTiles,
+          seed_words: seeds.map((s) => s.clean),
+          title: puzzleTitle.trim() || null,
+          creator_name: creatorName.trim() || null,
+          status: "published",
+        })
+        .select("number")
+        .single();
+
+      if (error) throw error;
+      setPublishedNumber(data.number);
+      setPublishStage("published");
+    } catch (err) {
+      console.error("Publish failed:", err);
+      // Fallback: generate the old ?p= URL so the puzzle isn't lost
+      const seedTiles: Tile[][] = seeds.map((s, si) =>
+        s.tiles.map((letters, ti) => ({
+          id: `s${si}-t${ti}`,
+          letters,
+          seedIndex: si,
+          tileIndex: ti,
+        }))
+      );
+      const puzzle: Puzzle = {
+        tiles: seedTiles.flat(),
+        seedWords: seeds.map((s) => s.clean),
+        seedTiles,
+      };
+      const encoded = encodePuzzle(puzzle);
+      const url = `${window.location.origin}/play?p=${encoded}`;
+      setFallbackUrl(url);
+      setPublishError("Could not reach the database — here's a shareable link instead:");
+      setPublishStage("error");
+    }
+  }, [allSeedsReady, seeds, creatorName, router]);
+
+  // Copy fallback URL to clipboard
+  const handleCopyFallback = useCallback(async () => {
+    if (!fallbackUrl) return;
+    try {
+      await navigator.clipboard.writeText(fallbackUrl);
     } catch {
-      // Fallback
       const el = document.createElement("textarea");
-      el.value = publishUrl;
+      el.value = fallbackUrl;
       document.body.appendChild(el);
       el.select();
       document.execCommand("copy");
       document.body.removeChild(el);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
-  }, [publishUrl]);
+    setFallbackCopied(true);
+    setTimeout(() => setFallbackCopied(false), 2000);
+  }, [fallbackUrl]);
 
   return (
     <div className="min-h-screen px-4 py-8 max-w-2xl mx-auto space-y-8">
@@ -782,56 +831,176 @@ export default function CreatePage() {
         {/* Validation result */}
         <ValidationPanel result={validation} />
 
-        {/* Publish */}
-        <button
-          onClick={handlePublish}
-          disabled={!allSeedsReady}
-          className={`
-            w-full py-3 px-6 border text-sm tracking-widest uppercase font-mono
-            transition-all rounded
-            ${
-              allSeedsReady
-                ? "hover:bg-green-950 cursor-pointer opacity-100"
-                : "opacity-30 cursor-not-allowed"
-            }
-          `}
-          style={{ borderColor: "var(--green-dim)", color: "var(--green-dim)" }}
-        >
-          [ GENERATE PUZZLE LINK ]
-        </button>
-
-        {/* Share URL */}
-        {publishUrl && (
-          <div
-            className="border rounded p-4 space-y-3"
-            style={{ borderColor: "var(--border)", background: "var(--bg-panel)" }}
+        {/* Publish — only enabled once validation passes */}
+        {publishStage === "idle" && (
+          <button
+            onClick={handleOpenPublishForm}
+            disabled={!validation?.ok}
+            className={`
+              w-full py-3 px-6 border text-sm tracking-widest uppercase font-mono
+              transition-all rounded
+              ${
+                validation?.ok
+                  ? "hover:bg-green-950 cursor-pointer opacity-100"
+                  : "opacity-30 cursor-not-allowed"
+              }
+            `}
+            style={{ borderColor: "var(--green)", color: "var(--green)" }}
           >
-            <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>
-              SHAREABLE LINK
-            </p>
+            [ PUBLISH PUZZLE ]
+          </button>
+        )}
+
+        {/* Published confirmation */}
+        {publishStage === "published" && publishedNumber != null && (
+          <div
+            className="border rounded p-4 space-y-4"
+            style={{ borderColor: "var(--green-dim)", background: "var(--bg-panel)" }}
+          >
+            <div className="text-center space-y-1">
+              <p className="text-2xl">🎉</p>
+              <p className="text-sm font-bold tracking-widest font-mono text-glow" style={{ color: "var(--green)" }}>
+                PUZZLE #{publishedNumber} PUBLISHED
+              </p>
+            </div>
             <div
-              className="text-xs break-all font-mono p-2 rounded border"
+              className="text-xs break-all font-mono p-2 rounded border text-center"
               style={{ borderColor: "var(--green-dark)", color: "var(--green-dim)", background: "var(--bg)" }}
             >
-              {publishUrl}
+              20tile.app/play/{publishedNumber}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={handleCopy}
-                className="flex-1 py-2 px-4 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
+                onClick={async () => {
+                  const url = `https://20tile.app/play/${publishedNumber}`;
+                  try { await navigator.clipboard.writeText(url); }
+                  catch {
+                    const el = document.createElement("textarea");
+                    el.value = url; document.body.appendChild(el); el.select();
+                    document.execCommand("copy"); document.body.removeChild(el);
+                  }
+                  setPublishedLinkCopied(true);
+                  setTimeout(() => setPublishedLinkCopied(false), 2000);
+                }}
+                className="flex-1 py-2 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
                 style={{ borderColor: "var(--green)", color: "var(--green)" }}
               >
-                {copied ? "✓ COPIED!" : "[ COPY LINK ]"}
+                {publishedLinkCopied ? "✓ COPIED" : "[ COPY LINK ]"}
               </button>
               <a
-                href={publishUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 py-2 px-4 border text-xs tracking-widest uppercase font-mono text-center transition-all rounded hover:bg-green-950"
+                href={`/play/${publishedNumber}`}
+                className="flex-1 py-2 border text-xs tracking-widest uppercase font-mono text-center transition-all rounded hover:bg-green-950"
                 style={{ borderColor: "var(--green-dim)", color: "var(--green-dim)" }}
               >
-                [ OPEN PUZZLE ]
+                [ PLAY NOW ]
               </a>
+            </div>
+          </div>
+        )}
+
+        {/* Publish form */}
+        {(publishStage === "form" || publishStage === "submitting" || publishStage === "error") && (
+          <div
+            className="border rounded p-4 space-y-4"
+            style={{ borderColor: "var(--green-dim)", background: "var(--bg-panel)" }}
+          >
+            <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>
+              PUBLISH PUZZLE
+            </p>
+
+            {publishError && (
+              <p className="text-xs text-red-400">{publishError}</p>
+            )}
+
+            {/* Title + creator name inputs */}
+            {publishStage !== "error" && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs tracking-widest" style={{ color: "var(--green-dark)" }}>
+                    PUZZLE TITLE (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={puzzleTitle}
+                    onChange={(e) => setPuzzleTitle(e.target.value)}
+                    placeholder="untitled"
+                    maxLength={60}
+                    disabled={publishStage === "submitting"}
+                    className="w-full bg-transparent border rounded px-3 py-2 font-mono text-sm outline-none transition-colors placeholder:opacity-30 disabled:opacity-50"
+                    style={{ borderColor: "var(--border)", color: "var(--green)" }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs tracking-widest" style={{ color: "var(--green-dark)" }}>
+                    YOUR NAME (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={creatorName}
+                    onChange={(e) => setCreatorName(e.target.value)}
+                    placeholder="anonymous"
+                    maxLength={40}
+                    disabled={publishStage === "submitting"}
+                    className="w-full bg-transparent border rounded px-3 py-2 font-mono text-sm outline-none transition-colors placeholder:opacity-30 disabled:opacity-50"
+                    style={{ borderColor: "var(--border)", color: "var(--green)" }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Fallback URL on error */}
+            {publishStage === "error" && fallbackUrl && (
+              <div className="space-y-2">
+                <div
+                  className="text-xs break-all font-mono p-2 rounded border"
+                  style={{ borderColor: "var(--green-dark)", color: "var(--green-dim)", background: "var(--bg)" }}
+                >
+                  {fallbackUrl}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCopyFallback}
+                    className="flex-1 py-2 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
+                    style={{ borderColor: "var(--green)", color: "var(--green)" }}
+                  >
+                    {fallbackCopied ? "✓ COPIED" : "[ COPY LINK ]"}
+                  </button>
+                  <a
+                    href={fallbackUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2 border text-xs tracking-widest uppercase font-mono text-center transition-all rounded hover:bg-green-950"
+                    style={{ borderColor: "var(--green-dim)", color: "var(--green-dim)" }}
+                  >
+                    [ OPEN ]
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              {publishStage !== "error" && (
+                <button
+                  onClick={handleSubmitPublish}
+                  disabled={publishStage === "submitting"}
+                  className={`
+                    flex-1 py-2 border text-sm tracking-widest uppercase font-mono
+                    transition-all rounded
+                    ${publishStage === "submitting" ? "opacity-50 cursor-not-allowed animate-pulse" : "hover:bg-green-950 cursor-pointer"}
+                  `}
+                  style={{ borderColor: "var(--green)", color: "var(--green)" }}
+                >
+                  {publishStage === "submitting" ? "[ PUBLISHING… ]" : "[ CONFIRM PUBLISH ]"}
+                </button>
+              )}
+              <button
+                onClick={() => { setPublishStage("idle"); setPublishError(null); setFallbackUrl(null); }}
+                className="px-4 py-2 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
+                style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
+              >
+                CANCEL
+              </button>
             </div>
           </div>
         )}

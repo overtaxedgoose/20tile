@@ -29,18 +29,9 @@ else
   git commit -m "initial commit"
 fi
 
-# ── Step 2: Vercel CLI ───────────────────────────────────────────────────────
-if ! command -v vercel &> /dev/null; then
-  echo ""
-  echo "→ Installing Vercel CLI..."
-  npm install -g vercel
-else
-  echo "→ Vercel CLI already installed ($(vercel --version))."
-fi
-
-# ── Step 3: Deploy ───────────────────────────────────────────────────────────
+# ── Step 2 & 3: Deploy via npx (no global install needed) ───────────────────
 echo ""
-echo "→ Starting Vercel deployment..."
+echo "→ Starting Vercel deployment via npx..."
 echo "   (A browser window will open to log in if you are not already authenticated.)"
 echo "   When prompted:"
 echo "     - Set up and deploy: Y"
@@ -50,7 +41,7 @@ echo "     - Project name: 20tile  (or press Enter for the default)"
 echo "     - In which directory is your code located: ./  (press Enter)"
 echo ""
 
-vercel
+npx vercel
 
 echo ""
 echo "=== Deploy complete! ==="
