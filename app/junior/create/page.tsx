@@ -574,21 +574,7 @@ export default function JuniorCreatePage() {
 
         for (const arr of byCount.values()) arr.sort((a, b) => a.word.localeCompare(b.word));
 
-        // Extra 3tile check: exactly 5 three-tile seed words, no extras
-        const seedWordSet = new Set(seeds.map((s) => s.clean));
-        const all3TileWords = byCount.get(3)!.filter((w) => w.is3Tile);
-        const extra3Tiles = all3TileWords.filter((w) => !seedWordSet.has(w.word));
-        if (extra3Tiles.length > 0) {
-          const listed = extra3Tiles.map((w) => w.word).join(", ");
-          errors.push(
-            `The tiles can accidentally spell ${extra3Tiles.length} extra word${extra3Tiles.length !== 1 ? "s" : ""} using all 3 tiles from one group: "${listed}". Adjust your tile splits to fix this.`
-          );
-        }
-        if (all3TileWords.length > 5) {
-          errors.push(
-            `The puzzle has ${all3TileWords.length} 3tile words — there should be exactly 5 (one per seed group). Adjust your tile splits to fix this.`
-          );
-        }
+        // Note: extra 3-tile words (beyond the 5 seeds) are intentionally allowed.
 
         totalWords = allWords.size;
         wordGroups = [1, 2, 3].map((count) => ({

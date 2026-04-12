@@ -401,7 +401,7 @@ function CompletionModal({
   score: number;
   words: ValidatedWord[];
   puzzle: JuniorPuzzle;
-  puzzleStats: { totalWords: number; maxScore: number } | null;
+  puzzleStats: { totalWords: number; maxScore: number; t1: number; t2: number; t3: number } | null;
   elapsedSeconds: number;
   puzzleNumber?: number;
   puzzleId?: string;
@@ -582,7 +582,7 @@ export default function PlayGameJunior({
   const [invalidGuesses, setInvalidGuesses] = useState<string[]>([]);
   const [score, setScore] = useState(0);
   const [wordSet, setWordSet] = useState<Set<string> | null>(null);
-  const [puzzleStats, setPuzzleStats] = useState<{ totalWords: number; maxScore: number } | null>(null);
+  const [puzzleStats, setPuzzleStats] = useState<{ totalWords: number; maxScore: number; t1: number; t2: number; t3: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -925,6 +925,24 @@ export default function PlayGameJunior({
           {puzzleStats && puzzleStats.maxScore > 0 && (
             <div className="px-1">
               <ScoreBar score={score} maxScore={puzzleStats.maxScore} />
+            </div>
+          )}
+
+          {/* Per-tile word counts */}
+          {puzzleStats && (
+            <div className="flex justify-around px-1">
+              {([
+                { label: "1-TILE", found: discoveredWords.filter(w => w.points === 1).length, total: puzzleStats.t1, color: "text-slate-600", dot: "bg-slate-400" },
+                { label: "2-TILE", found: discoveredWords.filter(w => w.points === 2).length, total: puzzleStats.t2, color: "text-sky-600",   dot: "bg-sky-400"   },
+                { label: "3-TILE", found: discoveredWords.filter(w => w.points === 3).length, total: puzzleStats.t3, color: "text-amber-600", dot: "bg-amber-400" },
+              ] as const).map(({ label, found, total, color, dot }) => (
+                <div key={label} className="flex flex-col items-center gap-0.5">
+                  <span className={`text-xs font-mono font-bold tabular-nums ${found === total ? color : "text-slate-400"}`}>
+                    {found}<span className="font-normal opacity-60">/{total}</span>
+                  </span>
+                  <span className="text-[9px] tracking-widest font-mono text-slate-400">{label}</span>
+                </div>
+              ))}
             </div>
           )}
 

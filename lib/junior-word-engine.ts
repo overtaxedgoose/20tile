@@ -230,15 +230,20 @@ function combinations<T>(arr: T[], k: number): T[][] {
 export function computeJuniorPuzzleStats(
   puzzle: JuniorPuzzle,
   wordSet: Set<string>
-): { totalWords: number; maxScore: number } {
+): { totalWords: number; maxScore: number; t1: number; t2: number; t3: number } {
   const allWords = findAllValidJuniorWords(puzzle, wordSet);
   let maxScore = 0;
+  let t1 = 0, t2 = 0, t3 = 0;
   for (const [, paths] of allWords) {
     if (paths.length > 0) {
-      maxScore += juniorScoreForTileCount(paths[0].length);
+      const count = paths[0].length;
+      maxScore += juniorScoreForTileCount(count);
+      if (count === 1) t1++;
+      else if (count === 2) t2++;
+      else if (count === 3) t3++;
     }
   }
-  return { totalWords: allWords.size, maxScore };
+  return { totalWords: allWords.size, maxScore, t1, t2, t3 };
 }
 
 // ─── Completion check ─────────────────────────────────────────────────────────
