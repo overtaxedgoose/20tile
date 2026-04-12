@@ -6538,8 +6538,6 @@ fade
 faded
 fades
 fading
-fag
-faggot
 fail
 failed
 failing
