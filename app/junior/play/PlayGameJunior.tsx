@@ -120,7 +120,7 @@ function ScoreBar({ score, maxScore }: { score: number; maxScore: number }) {
       </div>
 
       {/* Labels */}
-      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+      <div className="flex items-center justify-between text-[11px] font-mono text-slate-600">
         <span>{score} pts</span>
         {!goalReached ? (
           <span>goal: {target} pts</span>
@@ -221,7 +221,7 @@ function StagingChips({
           className="w-full flex items-center justify-center rounded-xl border-2 border-dashed border-slate-200"
           style={{ height: "44px" }}
         >
-          <span className="text-xs font-mono tracking-widest text-slate-300 uppercase">
+          <span className="text-xs font-mono tracking-widest text-slate-500 uppercase">
             Select up to 3 tiles
           </span>
         </div>
@@ -343,13 +343,13 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
   const sorted = [...words].sort((a, b) => a.word.localeCompare(b.word));
   return (
     <details style={{ width: "100%", minWidth: 0 }}>
-      <summary className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1 text-slate-400">
+      <summary className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1 text-slate-600">
         <span style={{ fontSize: "10px" }}>▸</span>
         WORDS FOUND ({words.length})
       </summary>
       <div className="pt-2 pb-1 space-y-2">
         {sorted.length === 0 ? (
-          <p className="text-xs text-slate-400">No words found yet.</p>
+          <p className="text-xs text-slate-500">No words found yet.</p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {sorted.map((w, i) => (
@@ -368,12 +368,12 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
         )}
         {invalidGuesses.length > 0 && (
           <div className="pt-1">
-            <p className="text-xs mb-1 text-slate-400">
+            <p className="text-xs mb-1 text-slate-500">
               {invalidGuesses.length} invalid guess{invalidGuesses.length !== 1 ? "es" : ""}
             </p>
             <div className="flex flex-wrap gap-1">
               {[...new Set(invalidGuesses)].map((g, i) => (
-                <span key={i} className="text-xs font-mono uppercase px-1.5 py-0.5 rounded border border-slate-200 text-slate-400">
+                <span key={i} className="text-xs font-mono uppercase px-1.5 py-0.5 rounded border border-slate-200 text-slate-500">
                   {g}
                 </span>
               ))}
@@ -443,7 +443,7 @@ function CompletionModal({
           <h2 className="text-xl font-bold tracking-widest font-mono text-sky-700">
             {allWordsFound ? "ALL WORDS FOUND!" : "15 WORDS!"}
           </h2>
-          <p className="text-xs tracking-widest text-slate-400">
+          <p className="text-xs tracking-widest text-slate-500">
             {found3Tiles.size}/5 3tiles · {words.length} words found
           </p>
         </div>
@@ -451,8 +451,8 @@ function CompletionModal({
         {/* Score */}
         <div className="text-center border-2 border-slate-100 rounded-xl py-3 bg-slate-50">
           <p className="text-4xl font-bold font-mono tabular-nums text-sky-600">{score}</p>
-          <p className="text-xs tracking-widest mt-1 text-slate-400">TOTAL POINTS</p>
-          <p className="text-xs font-mono tabular-nums mt-1 text-slate-400">
+          <p className="text-xs tracking-widest mt-1 text-slate-500">TOTAL POINTS</p>
+          <p className="text-xs font-mono tabular-nums mt-1 text-slate-500">
             ⏱ {formatElapsedTime(elapsedSeconds)}
           </p>
         </div>
@@ -460,11 +460,11 @@ function CompletionModal({
         {/* 3tiles found */}
         {tile3Words.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs tracking-widest text-slate-400">3TILES FOUND</p>
+            <p className="text-xs tracking-widest text-slate-500">3TILES FOUND</p>
             {tile3Words.map((w, i) => (
               <div key={i} className="flex justify-between text-xs font-mono">
                 <span className="text-amber-600 uppercase tracking-wider font-bold">{w.word}</span>
-                <span className="text-slate-400">3 pts</span>
+                <span className="text-slate-500">3 pts</span>
               </div>
             ))}
           </div>
@@ -473,7 +473,7 @@ function CompletionModal({
         {/* Other words */}
         {otherWords.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs tracking-widest text-slate-400">OTHER WORDS ({otherWords.length})</p>
+            <p className="text-xs tracking-widest text-slate-500">OTHER WORDS ({otherWords.length})</p>
             <div className="flex flex-wrap gap-1">
               {[...otherWords].sort((a, b) => b.points - a.points).slice(0, 12).map((w, i) => (
                 <span key={i} className="text-xs font-mono uppercase px-1.5 py-0.5 rounded-lg border border-slate-200 text-slate-600">
@@ -481,7 +481,7 @@ function CompletionModal({
                 </span>
               ))}
               {otherWords.length > 12 && (
-                <span className="text-xs text-slate-400">+{otherWords.length - 12} more</span>
+                <span className="text-xs text-slate-500">+{otherWords.length - 12} more</span>
               )}
             </div>
           </div>
@@ -489,7 +489,7 @@ function CompletionModal({
 
         {/* Share */}
         <div className="space-y-2">
-          <p className="text-xs tracking-widest text-slate-400">SHARE YOUR SCORE</p>
+          <p className="text-xs tracking-widest text-slate-500">SHARE YOUR SCORE</p>
           <pre className="text-xs font-mono whitespace-pre p-3 rounded-xl border-2 border-slate-100 leading-relaxed bg-slate-50 text-slate-500">
             {shareText}
           </pre>
@@ -548,6 +548,7 @@ export default function PlayGameJunior({
   const [showCompletion, setShowCompletion] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastCounterRef = useRef(0);
+  const completionTriggeredRef = useRef(false); // prevents re-opening modal after "Keep Playing"
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
 
@@ -653,17 +654,19 @@ export default function PlayGameJunior({
     return counts;
   }, [puzzle, wordSet, found3Tiles.size]);
 
-  // Auto-finish: trigger at 15 words
+  // Auto-finish: trigger once when 15 words are hit.
+  // Using a ref so this never re-fires after the player clicks "Keep Playing".
   useEffect(() => {
     if (
       discoveredWords.length > 0 &&
       isJuniorComplete(discoveredWords) &&
-      !showCompletion
+      !completionTriggeredRef.current
     ) {
+      completionTriggeredRef.current = true;
       setTimerRunning(false);
       setShowCompletion(true);
     }
-  }, [discoveredWords.length, showCompletion]);
+  }, [discoveredWords.length]);
 
   // Persist progress
   useEffect(() => {
@@ -842,16 +845,16 @@ export default function PlayGameJunior({
             <div className="flex-1 flex items-baseline justify-center gap-2">
               <span className="text-base font-bold font-mono tabular-nums text-sky-700">
                 {discoveredWords.length}
-                <span className="text-xs font-normal text-slate-400">/{JUNIOR_WORD_GOAL} words</span>
+                <span className="text-xs font-normal text-slate-600">/{JUNIOR_WORD_GOAL} words</span>
               </span>
               {wordsToGoal > 0 && (
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-slate-600">
                   {wordsToGoal} to go
                 </span>
               )}
             </div>
 
-            <span className="text-xs font-mono tabular-nums flex-none text-slate-400">
+            <span className="text-xs font-mono tabular-nums flex-none text-slate-600">
               ⏱ {formatElapsedTime(elapsedSeconds)}
             </span>
 
@@ -939,17 +942,17 @@ export default function PlayGameJunior({
           {/* Words by letter hint — unlocked after all 5 3tiles found */}
           {found3Tiles.size === 5 && wordsByLetter && (
             <details style={{ width: "100%", minWidth: 0 }}>
-              <summary className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1 text-slate-400">
+              <summary className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1 text-slate-600">
                 <span style={{ fontSize: "10px" }}>▸</span>
                 WORDS BY LETTER
-                <span className="ml-1 text-[9px] opacity-40 tracking-widest">· hint</span>
+                <span className="ml-1 text-[9px] opacity-60 tracking-widest">· hint</span>
               </summary>
               <div className="pt-2 pb-1">
                 <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                   {Object.entries(wordsByLetter).sort(([a], [b]) => a.localeCompare(b)).map(([letter, count]) => (
                     <span key={letter} className="font-mono text-xs inline-flex items-baseline gap-1">
-                      <span className="font-bold uppercase text-slate-500">{letter}</span>
-                      <span className="text-slate-400">{count}</span>
+                      <span className="font-bold uppercase text-slate-600">{letter}</span>
+                      <span className="text-slate-500">{count}</span>
                     </span>
                   ))}
                 </div>
@@ -957,15 +960,30 @@ export default function PlayGameJunior({
             </details>
           )}
 
-          {/* Manual finish — after all 5 3tiles found but before auto-finish */}
-          {found3Tiles.size === 5 && !showCompletion && !isJuniorComplete(discoveredWords) && (
-            <button
-              onClick={() => { setTimerRunning(false); setShowCompletion(true); }}
-              className="w-full py-2 border-2 border-amber-300 text-xs font-mono tracking-widest uppercase rounded-xl transition-colors hover:bg-amber-50 text-amber-600"
-              style={{ flexShrink: 0 }}
-            >
-              ⭐ [ FINISH PUZZLE ]
-            </button>
+          {/* Finish / See Results button:
+              - Before 15 words: show after all 5 3tiles are found ("Finish Puzzle")
+              - After 15 words + modal dismissed: always available ("See Results")
+              Neither shows while the modal is already open. */}
+          {!showCompletion && (
+            <>
+              {isJuniorComplete(discoveredWords) ? (
+                <button
+                  onClick={() => setShowCompletion(true)}
+                  className="w-full py-2 border-2 border-sky-300 text-xs font-mono tracking-widest uppercase rounded-xl transition-colors hover:bg-sky-50 text-sky-600"
+                  style={{ flexShrink: 0 }}
+                >
+                  🎉 [ SEE RESULTS ]
+                </button>
+              ) : found3Tiles.size === 5 ? (
+                <button
+                  onClick={() => { setTimerRunning(false); setShowCompletion(true); }}
+                  className="w-full py-2 border-2 border-amber-300 text-xs font-mono tracking-widest uppercase rounded-xl transition-colors hover:bg-amber-50 text-amber-600"
+                  style={{ flexShrink: 0 }}
+                >
+                  ⭐ [ FINISH PUZZLE ]
+                </button>
+              ) : null}
+            </>
           )}
         </div>
       </div>

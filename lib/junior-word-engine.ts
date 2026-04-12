@@ -149,34 +149,30 @@ export function evaluateJuniorSelection(
     return { word: "", valid: false, is3Tile: false, points: 0 };
   }
 
-  const perms = permutations(tiles);
-  let bestWord = "";
-  let bestIs3Tile = false;
+  // Tiles must be selected in the correct order — no permutation checking.
+  // "NG" + "KI" stays "NGKI", not "KING". Players must tap tiles left-to-right.
+  const word = tiles.map((t) => t.letters).join("");
 
-  for (const perm of perms) {
-    const word = perm.map((t) => t.letters).join("");
-    if (wordSet.has(word)) {
-      bestWord = word;
-      // Check if this is a 3tile: all 3 tiles from the same seed in any order
-      if (perm.length === 3) {
-        const seedIdx = perm[0].seedIndex;
-        const allSameSeed = perm.every((t) => t.seedIndex === seedIdx);
-        const allTilesUsed =
-          puzzle.seedTiles[seedIdx]?.every((st) =>
-            perm.some((t) => t.id === st.id)
-          ) ?? false;
-        if (allSameSeed && allTilesUsed) {
-          bestIs3Tile = true;
-          break;
-        }
-      }
+  if (!wordSet.has(word)) {
+    return { word: "", valid: false, is3Tile: false, points: 0 };
+  }
+
+  // 3tile check: all 3 tiles from the same seed (order already validated above)
+  let is3Tile = false;
+  if (tiles.length === 3) {
+    const seedIdx = tiles[0].seedIndex;
+    const allSameSeed = tiles.every((t) => t.seedIndex === seedIdx);
+    const allTilesUsed =
+      puzzle.seedTiles[seedIdx]?.every((st) =>
+        tiles.some((t) => t.id === st.id)
+      ) ?? false;
+    if (allSameSeed && allTilesUsed) {
+      is3Tile = true;
     }
   }
 
-  const valid = bestWord.length > 0;
-  const points = valid ? juniorScoreForTileCount(tiles.length) : 0;
-
-  return { word: bestWord, valid, is3Tile: bestIs3Tile, points };
+  const points = juniorScoreForTileCount(tiles.length);
+  return { word, valid: true, is3Tile, points };
 }
 
 /** Generate all permutations of an array */
