@@ -267,7 +267,7 @@ function ToastList({ toasts }: { toasts: Toast[] }) {
 function WordsByLetterHint({ letterCounts }: { letterCounts: Record<string, number> }) {
   const entries = Object.entries(letterCounts).sort(([a], [b]) => a.localeCompare(b));
   return (
-    <details>
+    <details style={{ width: "100%", minWidth: 0 }}>
       <summary
         className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1"
         style={{ color: "var(--green-muted)" }}
@@ -296,7 +296,7 @@ function WordsByLetterHint({ letterCounts }: { letterCounts: Record<string, numb
 function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWord[]; invalidGuesses: string[] }) {
   const sorted = [...words].sort((a, b) => a.word.localeCompare(b.word));
   return (
-    <details>
+    <details style={{ width: "100%", minWidth: 0 }}>
       <summary
         className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1"
         style={{ color: "var(--green-muted)" }}
@@ -939,6 +939,7 @@ export default function PlayGame({
       <div
         className="max-w-sm mx-auto"
         style={{
+          width: "100%",
           display: "flex",
           flexDirection: "column",
           height: "100dvh",
@@ -1080,7 +1081,10 @@ export default function PlayGame({
           style={{
             flex: 1,
             minHeight: 0,
+            minWidth: 0,
+            width: "100%",
             overflowY: "auto",
+            overflowX: "hidden",
             display: "flex",
             flexDirection: "column",
             gap: "6px",
