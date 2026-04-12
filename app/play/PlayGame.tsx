@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   decodePuzzle,
@@ -8,6 +8,7 @@ import {
   evaluateSelection,
   getFoundQuartiles,
   computePuzzleStats,
+  findAllValidWords,
   generateShareCard,
   shuffleArray,
   type Puzzle,
@@ -255,6 +256,36 @@ function ToastList({ toasts }: { toasts: Toast[] }) {
         );
       })}
     </div>
+  );
+}
+
+// ─── WordsByLetterHint ────────────────────────────────────────────────────────
+// Expandable hint showing how many discoverable words start with each letter.
+// Revealed only after all 5 quartiles are found.
+
+function WordsByLetterHint({ letterCounts }: { letterCounts: Record<string, number> }) {
+  const entries = Object.entries(letterCounts).sort(([a], [b]) => a.localeCompare(b));
+  return (
+    <details>
+      <summary
+        className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1"
+        style={{ color: "var(--green-muted)" }}
+      >
+        <span style={{ fontSize: "10px" }}>▸</span>
+        WORDS BY LETTER
+        <span className="ml-1 text-[9px] opacity-40 tracking-widest">· hint</span>
+      </summary>
+      <div className="pt-2 pb-1">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {entries.map(([letter, count]) => (
+            <span key={letter} className="font-mono text-xs inline-flex items-baseline gap-1">
+              <span className="font-bold uppercase" style={{ color: "var(--green-muted)" }}>{letter}</span>
+              <span style={{ color: "var(--green-dark)" }}>{count}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </details>
   );
 }
 
@@ -688,6 +719,19 @@ export default function PlayGame({
   // Derived: which seed groups have a found quartile
   const foundQuartiles = puzzle ? getFoundQuartiles(discoveredWords, puzzle) : new Set<number>();
 
+  // Derived: letter → count of all discoverable words (used by WordsByLetterHint)
+  // Runs once puzzle + wordSet are both available; result is stable.
+  const wordsByLetter = useMemo<Record<string, number> | null>(() => {
+    if (!puzzle || !wordSet) return null;
+    const allWords = findAllValidWords(puzzle, wordSet);
+    const counts: Record<string, number> = {};
+    for (const word of allWords.keys()) {
+      const letter = word[0].toUpperCase();
+      counts[letter] = (counts[letter] ?? 0) + 1;
+    }
+    return counts;
+  }, [puzzle, wordSet]);
+
   // Auto-finish: show completion modal as soon as every discoverable word is found
   useEffect(() => {
     if (
@@ -1002,6 +1046,11 @@ export default function PlayGame({
           }}
         >
           <CollapsibleWordsDrawer words={discoveredWords} invalidGuesses={invalidGuesses} />
+
+          {/* Words by letter hint — unlocked after all 5 quartiles are found */}
+          {foundQuartiles.size === 5 && wordsByLetter && (
+            <WordsByLetterHint letterCounts={wordsByLetter} />
+          )}
 
           {/* Show once all 5 quartiles are found but game hasn't auto-finished */}
           {foundQuartiles.size === 5 && !showCompletion && (
