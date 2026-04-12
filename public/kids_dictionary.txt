@@ -1,4 +1,6 @@
 crag
+colas 
+cola
 aa
 ab
 aba
