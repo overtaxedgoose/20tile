@@ -9,7 +9,7 @@ import {
   getFound3Tiles,
   computeJuniorPuzzleStats,
   findAllValidJuniorWords,
-  isJuniorComplete,
+
   formatElapsedTime,
   shuffleArray,
   JUNIOR_WORD_GOAL,
@@ -654,19 +654,26 @@ export default function PlayGameJunior({
     return counts;
   }, [puzzle, wordSet, found3Tiles.size]);
 
-  // Auto-finish: trigger once when 15 words are hit.
+  // Effective word goal: min(15, totalWords in this puzzle).
+  // A puzzle with only 11 discoverable words uses 11 as the goal, not 15.
+  const effectiveGoal = puzzleStats
+    ? Math.min(JUNIOR_WORD_GOAL, puzzleStats.totalWords)
+    : JUNIOR_WORD_GOAL;
+
+  // Auto-finish: trigger once when effectiveGoal words are hit.
   // Using a ref so this never re-fires after the player clicks "Keep Playing".
   useEffect(() => {
     if (
+      puzzleStats &&
       discoveredWords.length > 0 &&
-      isJuniorComplete(discoveredWords) &&
+      discoveredWords.length >= Math.min(JUNIOR_WORD_GOAL, puzzleStats.totalWords) &&
       !completionTriggeredRef.current
     ) {
       completionTriggeredRef.current = true;
       setTimerRunning(false);
       setShowCompletion(true);
     }
-  }, [discoveredWords.length]);
+  }, [discoveredWords.length, puzzleStats]);
 
   // Persist progress
   useEffect(() => {
@@ -797,7 +804,7 @@ export default function PlayGameJunior({
   }
 
   // Word count progress toward 15
-  const wordsToGoal = Math.max(0, JUNIOR_WORD_GOAL - discoveredWords.length);
+  const wordsToGoal = Math.max(0, effectiveGoal - discoveredWords.length);
 
   return (
     <>
@@ -845,7 +852,7 @@ export default function PlayGameJunior({
             <div className="flex-1 flex items-baseline justify-center gap-2">
               <span className="text-base font-bold font-mono tabular-nums text-sky-700">
                 {discoveredWords.length}
-                <span className="text-xs font-normal text-slate-600">/{JUNIOR_WORD_GOAL} words</span>
+                <span className="text-xs font-normal text-slate-600">/{effectiveGoal} words</span>
               </span>
               {wordsToGoal > 0 && (
                 <span className="text-xs font-mono text-slate-600">
@@ -966,7 +973,7 @@ export default function PlayGameJunior({
               Neither shows while the modal is already open. */}
           {!showCompletion && (
             <>
-              {isJuniorComplete(discoveredWords) ? (
+              {discoveredWords.length >= effectiveGoal ? (
                 <button
                   onClick={() => setShowCompletion(true)}
                   className="w-full py-2 border-2 border-sky-300 text-xs font-mono tracking-widest uppercase rounded-xl transition-colors hover:bg-sky-50 text-sky-600"

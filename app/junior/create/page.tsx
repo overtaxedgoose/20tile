@@ -269,7 +269,10 @@ function ValidationPanel({ result }: { result: ValidationState | null }) {
   }
 
   const allClear =
-    result.ok && result.errors.length === 0 && result.duplicatePaths.length === 0;
+    result.ok &&
+    result.errors.length === 0 &&
+    result.duplicatePaths.length === 0 &&
+    result.seedsMissing.length === 0;
 
   return (
     <div
@@ -598,7 +601,7 @@ export default function JuniorCreatePage() {
       warnings,
       duplicatePaths,
       seedsMissing,
-      ok: errors.length === 0,
+      ok: errors.length === 0 && seedsMissing.length === 0 && duplicatePaths.length === 0,
       wordGroups,
       totalWords,
       totalScore,
