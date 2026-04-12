@@ -61,9 +61,6 @@ function TileCell({
   let scaleCls = "";
 
   if (isLocked && isSelected && qColor) {
-    // Selected on top of a locked tile — brighten the quartile colour.
-    // No scale transform: static transforms on grid children can cause
-    // mobile browsers to incorrectly expand the grid's layout height.
     borderCls = "border-white";
     bgCls = qColor.bg;
     textCls = "text-white";
@@ -74,11 +71,8 @@ function TileCell({
     bgCls = qColor.bg;
     textCls = qColor.text;
     shadowCls = "hover:shadow-[0_0_8px_rgba(255,255,255,0.15)]";
-    scaleCls = "hover:scale-105";
+    scaleCls = "";
   } else if (isSelected) {
-    // Use a bright glow + border instead of scale to indicate selection.
-    // scale-105 as a persistent (non-hover) class causes some mobile browsers
-    // to recalculate grid row heights, expanding the tile grid on each tap.
     borderCls = "border-green-300";
     bgCls = "bg-green-900";
     textCls = "text-green-100";
@@ -89,13 +83,13 @@ function TileCell({
     bgCls = "bg-black";
     textCls = "text-green-400";
     shadowCls = "hover:shadow-[0_0_8px_rgba(0,255,65,0.2)]";
-    scaleCls = "hover:scale-105";
+    scaleCls = "";
   }
 
   // w-full h-full: tile fills the grid cell whose dimensions are set by the
-  // grid container (not by this element). Do NOT use aspect-square here —
-  // that would let tile content drive the grid row height.
-  const sizeClass = "w-full h-full text-sm sm:text-base";
+  // grid container (not by this element). No scale transforms — they cause
+  // mobile browsers to incorrectly recalculate grid row heights.
+  const sizeClass = "w-full h-full text-2xl sm:text-3xl";
 
   return (
     <button
@@ -104,9 +98,9 @@ function TileCell({
       aria-label={`Tile ${tile.letters}`}
       className={`
         relative flex items-center justify-center
-        border-2 rounded-lg
-        font-mono font-bold tracking-wide lowercase
-        transition-all duration-150 select-none active:scale-95
+        border-2 rounded-xl
+        font-mono font-bold tracking-wider lowercase
+        transition-all duration-150 select-none
         ${borderCls} ${bgCls} ${textCls} ${shadowCls} ${scaleCls} ${sizeClass}
         ${shake ? "animate-shake" : ""}
       `}
@@ -119,173 +113,125 @@ function TileCell({
   );
 }
 
-// ─── StagingRow ───────────────────────────────────────────────────────────────
-// Replaces SelectionBar. Four fixed slots at the top of the board.
-// Tapping a staged tile returns it to the board (deselects it).
+// ─── StagingChips ─────────────────────────────────────────────────────────────
+// Slim chip row showing only the currently selected tiles.
+// Tapping a chip deselects that tile.
 
-function StagingRow({
+function StagingChips({
   selectedTiles,
   onDeselect,
-  onClear,
-  onSubmit,
-  onShuffle,
-  canSubmit,
   shaking,
 }: {
   selectedTiles: Tile[];
   onDeselect: (id: string) => void;
-  onClear: () => void;
-  onSubmit: () => void;
-  onShuffle: () => void;
-  canSubmit: boolean;
   shaking: boolean;
 }) {
   return (
-    <div className="space-y-2">
-      {/*
-        Staging slots — padding-top hack enforces height = 25% of width
-        (≈ one square cell wide). paddingTop % is always relative to element
-        WIDTH in CSS, so this height can never be overridden by content.
-      */}
-      <div style={{ position: "relative", paddingTop: "18%", flexShrink: 0 }}>
+    <div
+      style={{
+        flexShrink: 0,
+        height: "52px",
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      {selectedTiles.length === 0 ? (
         <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "8px",
-          }}
+          className="w-full flex items-center justify-center rounded-lg border-2 border-dashed"
+          style={{ borderColor: "var(--border)", height: "44px" }}
         >
-          {[0, 1, 2, 3].map((i) => {
-            const tile = selectedTiles[i];
-            if (tile) {
-              return (
-                <button
-                  key={tile.id}
-                  onClick={() => onDeselect(tile.id)}
-                  aria-label={`Remove ${tile.letters} from selection`}
-                  className={`
-                    relative flex items-center justify-center
-                    border-2 border-green-300 bg-green-900 text-green-100
-                    rounded-lg font-mono font-bold tracking-wide lowercase
-                    text-sm w-full h-full
-                    transition-colors duration-150 select-none
-                    hover:bg-green-800 active:opacity-80
-                    shadow-[0_0_12px_rgba(0,255,65,0.35)]
-                    ${shaking ? "animate-shake" : ""}
-                  `}
-                >
-                  {tile.letters}
-                  <span className="absolute top-0.5 right-0.5 text-[8px] opacity-50">✕</span>
-                </button>
-              );
-            }
-            return (
-              <div
-                key={i}
-                className="w-full h-full rounded-lg border-2 border-dashed flex items-center justify-center"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <span className="text-xs opacity-20" style={{ color: "var(--green)" }}>·</span>
-              </div>
-            );
-          })}
+          <span className="text-xs font-mono tracking-widest opacity-25" style={{ color: "var(--green)" }}>
+            SELECT UP TO 4 TILES
+          </span>
         </div>
-      </div>
-
-      {/* Action buttons row */}
-      <div className="flex gap-2">
-        <button
-          onClick={onShuffle}
-          className="
-            flex-none px-3 py-2 border text-xs font-mono tracking-widest uppercase rounded
-            transition-all hover:bg-green-950
-          "
-          style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
-          aria-label="Shuffle tiles"
-        >
-          ⟳ SHUFFLE
-        </button>
-        <button
-          onClick={onClear}
-          disabled={selectedTiles.length === 0}
-          className="
-            flex-none px-3 py-2 border text-xs font-mono tracking-widest uppercase rounded
-            transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-green-950
-          "
-          style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
-        >
-          CLEAR
-        </button>
-        <button
-          onClick={onSubmit}
-          disabled={!canSubmit}
-          className={`
-            flex-1 py-2 px-3 border text-sm font-mono tracking-widest uppercase rounded
-            font-bold transition-all
-            ${canSubmit ? "hover:bg-green-900 cursor-pointer" : "opacity-30 cursor-not-allowed"}
-            ${shaking ? "animate-shake" : ""}
-          `}
-          style={{ borderColor: "var(--green)", color: "var(--green)" }}
-        >
-          [ SUBMIT{selectedTiles.length > 0 ? ` (${selectedTiles.length})` : "" } ]
-        </button>
-      </div>
+      ) : (
+        <div className="flex gap-2 justify-center w-full">
+          {selectedTiles.map((tile) => (
+            <button
+              key={tile.id}
+              onClick={() => onDeselect(tile.id)}
+              aria-label={`Remove ${tile.letters} from selection`}
+              className={`
+                flex items-center gap-1
+                border-2 border-green-300 bg-green-900 text-green-100
+                rounded-lg font-mono font-bold tracking-wide lowercase
+                px-3 py-1.5 text-sm
+                transition-colors duration-150 select-none
+                hover:bg-green-800 active:opacity-80
+                shadow-[0_0_12px_rgba(0,255,65,0.35)]
+                ${shaking ? "animate-shake" : ""}
+              `}
+            >
+              {tile.letters}
+              <span className="text-[9px] opacity-50 leading-none">✕</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── ScoreHeader ──────────────────────────────────────────────────────────────
+// ─── ActionBar ────────────────────────────────────────────────────────────────
+// Three-button row below the tile grid: shuffle | submit | clear.
 
-function ScoreHeader({
-  score,
-  discoveredCount,
-  foundQuartiles,
-  maxScore,
-  totalWords,
+function ActionBar({
+  onShuffle,
+  onSubmit,
+  onClear,
+  canSubmit,
+  shaking,
+  selectedCount,
 }: {
-  score: number;
-  discoveredCount: number;
-  foundQuartiles: Set<number>;
-  maxScore?: number;
-  totalWords?: number;
+  onShuffle: () => void;
+  onSubmit: () => void;
+  onClear: () => void;
+  canSubmit: boolean;
+  shaking: boolean;
+  selectedCount: number;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      {/* Score + word count */}
-      <div className="flex items-baseline gap-3">
-        <span className="text-2xl font-bold font-mono tabular-nums text-glow" style={{ color: "var(--green)" }}>
-          {score}
-          {maxScore != null && (
-            <span className="text-sm font-normal" style={{ color: "var(--green-dark)" }}>
-              /{maxScore}
-            </span>
-          )}
-          <span className="text-sm font-normal ml-1" style={{ color: "var(--green-muted)" }}>pts</span>
-        </span>
-        <span className="text-xs font-mono" style={{ color: "var(--green-muted)" }}>
-          {discoveredCount}{totalWords != null ? `/${totalWords}` : ""} word{(totalWords ?? discoveredCount) !== 1 ? "s" : ""}
-        </span>
-      </div>
+    <div style={{ flexShrink: 0, display: "flex", gap: "8px", alignItems: "stretch" }}>
+      {/* Shuffle */}
+      <button
+        onClick={onShuffle}
+        className="flex items-center justify-center border rounded-lg transition-all hover:bg-green-950"
+        style={{ borderColor: "var(--border)", color: "var(--green-muted)", width: "48px", height: "44px", fontSize: "18px" }}
+        aria-label="Shuffle tiles"
+      >
+        ⟳
+      </button>
 
-      {/* Quartile progress dots */}
-      <div className="flex gap-1.5 items-center">
-        {QUARTILE_COLORS.map((c, i) => (
-          <div
-            key={i}
-            className={`w-3 h-3 rounded-full border transition-all duration-300 ${
-              foundQuartiles.has(i)
-                ? `${c.dot} border-transparent scale-125`
-                : "border-green-800 bg-transparent"
-            }`}
-            title={`${c.label} ${foundQuartiles.has(i) ? "✓" : "○"}`}
-          />
-        ))}
-      </div>
+      {/* Submit — prominent center button */}
+      <button
+        onClick={onSubmit}
+        disabled={!canSubmit}
+        className={`
+          flex-1 border-2 text-sm font-mono font-bold tracking-widest uppercase rounded-lg
+          transition-all
+          ${canSubmit ? "hover:bg-green-900 cursor-pointer" : "opacity-30 cursor-not-allowed"}
+          ${shaking ? "animate-shake" : ""}
+        `}
+        style={{ borderColor: "var(--green)", color: "var(--green)", height: "44px" }}
+      >
+        ✓ SUBMIT{selectedCount > 0 ? ` (${selectedCount})` : ""}
+      </button>
+
+      {/* Clear */}
+      <button
+        onClick={onClear}
+        disabled={selectedCount === 0}
+        className="flex items-center justify-center border rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-green-950"
+        style={{ borderColor: "var(--border)", color: "var(--green-muted)", width: "48px", height: "44px", fontSize: "16px" }}
+        aria-label="Clear selection"
+      >
+        ✕
+      </button>
     </div>
   );
 }
+
+
 
 // ─── Toast Container ──────────────────────────────────────────────────────────
 
@@ -313,49 +259,60 @@ function ToastList({ toasts }: { toasts: Toast[] }) {
   );
 }
 
-// ─── Discovered Words Panel ───────────────────────────────────────────────────
+// ─── CollapsibleWordsDrawer ───────────────────────────────────────────────────
+// Collapsed by default; tap the summary to expand and see found words.
 
-function DiscoveredWordsPanel({ words, invalidGuesses }: { words: ValidatedWord[]; invalidGuesses: string[] }) {
+function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWord[]; invalidGuesses: string[] }) {
   const sorted = [...words].sort((a, b) => a.word.localeCompare(b.word));
   return (
-    <div className="space-y-3">
-      <div className="border rounded-lg p-3 space-y-2" style={{ borderColor: "var(--border)", background: "var(--bg-panel)" }}>
-        <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>
-          DISCOVERED WORDS ({words.length})
-        </p>
+    <details>
+      <summary
+        className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1"
+        style={{ color: "var(--green-muted)" }}
+      >
+        <span style={{ fontSize: "10px" }}>▸</span>
+        WORDS FOUND ({words.length})
+      </summary>
+      <div className="pt-2 pb-1 space-y-2">
         {sorted.length === 0 ? (
-          <p className="text-xs" style={{ color: "var(--green-dark)" }}>No words found yet. Start tapping!</p>
+          <p className="text-xs" style={{ color: "var(--green-dark)" }}>No words found yet.</p>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {sorted.map((w, i) => (
-              <div key={i} className="flex items-center gap-1">
-                <span className={`text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                  w.isQuartile ? "border-yellow-600 bg-yellow-950 text-yellow-300" : "border-green-800 bg-black text-green-400"
-                }`}>
-                  {w.word}
-                </span>
-                <span className="text-xs tabular-nums" style={{ color: "var(--green-muted)" }}>{w.points}p</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {invalidGuesses.length > 0 && (
-        <details>
-          <summary className="text-xs cursor-pointer tracking-widest select-none" style={{ color: "var(--green-dark)" }}>
-            ▸ {invalidGuesses.length} invalid guess{invalidGuesses.length !== 1 ? "es" : ""}
-          </summary>
-          <div className="mt-2 flex flex-wrap gap-1 pl-2">
-            {[...new Set(invalidGuesses)].map((g, i) => (
-              <span key={i} className="text-xs font-mono uppercase px-1.5 py-0.5 rounded"
-                style={{ color: "var(--green-dark)", border: "1px solid var(--green-dark)" }}>
-                {g}
+              <span
+                key={i}
+                className={`text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                  w.isQuartile
+                    ? "border-yellow-600 bg-yellow-950 text-yellow-300"
+                    : "border-green-800 bg-black text-green-400"
+                }`}
+              >
+                {w.word}
+                <span className="opacity-40 font-normal ml-1">{w.points}p</span>
               </span>
             ))}
           </div>
-        </details>
-      )}
-    </div>
+        )}
+        {invalidGuesses.length > 0 && (
+          <div className="pt-1">
+            <p className="text-xs mb-1" style={{ color: "var(--green-dark)" }}>
+              {invalidGuesses.length} invalid guess{invalidGuesses.length !== 1 ? "es" : ""}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {[...new Set(invalidGuesses)].map((g, i) => (
+                <span
+                  key={i}
+                  className="text-xs font-mono uppercase px-1.5 py-0.5 rounded"
+                  style={{ color: "var(--green-dark)", border: "1px solid var(--green-dark)" }}
+                >
+                  {g}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
 
@@ -850,7 +807,7 @@ export default function PlayGame({
   const puzzleUrl = puzzleNumber != null
     ? `20tile.app/play/${puzzleNumber}`
     : typeof window !== "undefined" ? window.location.href : "20tile.app";
-  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl) : "";
+  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl, puzzleStats ?? undefined) : "";
 
   // ── Render guards ────────────────────────────────────────────────────────────
 
@@ -917,15 +874,10 @@ export default function PlayGame({
       >
         {/*
           ── TOP SECTION ────────────────────────────────────────────────────────
-          flex: 1 + minHeight: 0   fills all viewport height MINUS the fixed
-                                   bottom strip; can shrink but never overflow
-          overflow: hidden         HARD CEILING — no child can push this taller,
-                                   regardless of game state or browser quirks
-
-          The tile grid inside uses flex: 1 + minHeight: 0 to fill whatever
-          vertical space remains after header / score / staging / buttons.
-          No aspect-ratio or padding-top tricks needed — the height is simply
-          whatever the screen gives after the bottom strip is reserved.
+          flex: 1 + minHeight: 0  fills all viewport height MINUS the bottom
+          strip. overflow: hidden is the hard ceiling — no child may push
+          this taller. The tile grid inside uses flex: 1 + minHeight: 0 to
+          fill whatever space remains after header / chips / action bar.
         */}
         <div
           style={{
@@ -937,50 +889,73 @@ export default function PlayGame({
             gap: "8px",
           }}
         >
-          {/* Nav */}
-          <header style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+          {/* ── Compact single-line header ──────────────────────────────── */}
+          <header
+            style={{
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            {/* Back link */}
             <Link
               href="/"
-              className="text-xs tracking-widest opacity-40 hover:opacity-100 transition-opacity font-mono"
+              className="text-xs tracking-widest opacity-40 hover:opacity-100 transition-opacity font-mono flex-none"
               style={{ color: "var(--green)" }}
             >
               ← 20TILE
             </Link>
+
+            {/* Score + word count — centred */}
+            <div className="flex-1 flex items-baseline justify-center gap-2">
+              <span
+                className="text-lg font-bold font-mono tabular-nums text-glow"
+                style={{ color: "var(--green)" }}
+              >
+                {score}
+                {puzzleStats?.maxScore != null && (
+                  <span className="text-xs font-normal" style={{ color: "var(--green-dark)" }}>
+                    /{puzzleStats.maxScore}
+                  </span>
+                )}
+                <span className="text-xs font-normal ml-1" style={{ color: "var(--green-muted)" }}>pts</span>
+              </span>
+              <span className="text-xs font-mono" style={{ color: "var(--green-muted)" }}>
+                {discoveredWords.length}
+                {puzzleStats?.totalWords != null ? `/${puzzleStats.totalWords}` : ""} words
+              </span>
+            </div>
+
+            {/* Quartile progress dots */}
+            <div className="flex gap-1 items-center flex-none">
+              {QUARTILE_COLORS.map((c, i) => (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full border transition-all duration-300 ${
+                    foundQuartiles.has(i)
+                      ? `${c.dot} border-transparent scale-125`
+                      : "border-green-800 bg-transparent"
+                  }`}
+                  title={`${c.label} ${foundQuartiles.has(i) ? "✓" : "○"}`}
+                />
+              ))}
+            </div>
           </header>
 
-          {/* Score + quartile progress dots */}
-          <ScoreHeader
-            score={score}
-            discoveredCount={discoveredWords.length}
-            foundQuartiles={foundQuartiles}
-            maxScore={puzzleStats?.maxScore}
-            totalWords={puzzleStats?.totalWords}
-          />
-
-          {/* Staging row (4 slots) + Shuffle / Clear / Submit buttons */}
-          <StagingRow
+          {/* ── Staging chips ────────────────────────────────────────────── */}
+          <StagingChips
             selectedTiles={selectedTiles}
             onDeselect={(id) => setSelectedIds((prev) => prev.filter((x) => x !== id))}
-            onClear={() => setSelectedIds([])}
-            onSubmit={handleSubmit}
-            onShuffle={handleShuffle}
-            canSubmit={selectedIds.length >= 1 && !!wordSet}
             shaking={shaking}
           />
 
           {/*
-            ── 4×5 TILE GRID ──────────────────────────────────────────────────
-            flex: 1 + minHeight: 0  fills every pixel left over in the top
-                                    section after header / score / staging.
-            overflow: hidden        tiles never leak out of the grid.
-
-            gridTemplateRows: repeat(5, 1fr)  divides the exact available
-            height into 5 equal rows; with w-full h-full tiles the cells
-            fill perfectly without influencing the container's size.
-
-            On most modern phones this produces near-square tiles. On small
-            screens (iPhone SE) tiles are slightly wider than tall but the
-            layout is perfectly stable across all game states.
+            ── 4×5 TILE GRID ──────────────────────────────────────────────
+            flex: 1 + minHeight: 0  takes every pixel remaining after
+            header / chips / action bar. overflow: hidden prevents bleed.
+            gridTemplateRows: repeat(5, 1fr) divides the exact height into
+            5 equal rows so tiles are always square-ish without aspect-ratio.
           */}
           <div
             style={{
@@ -1004,27 +979,35 @@ export default function PlayGame({
               />
             ))}
           </div>
+
+          {/* ── Action bar (below grid) ──────────────────────────────────── */}
+          <ActionBar
+            onShuffle={handleShuffle}
+            onSubmit={handleSubmit}
+            onClear={() => setSelectedIds([])}
+            canSubmit={selectedIds.length >= 1 && !!wordSet}
+            shaking={shaking}
+            selectedCount={selectedTiles.length}
+          />
         </div>
 
         {/*
-          ── BOTTOM SECTION ─────────────────────────────────────────────────────
-          height: clamp(...)  FIXED height — never grows, never shrinks.
-                              Because this is fixed, the top section always
-                              gets a known, stable amount of vertical space.
-          overflow-y: auto    scrolls within its fixed height if word list grows
-          flexShrink: 0       won't be squeezed by the top section
+          ── BOTTOM STRIP ───────────────────────────────────────────────────────
+          Collapsed words drawer + optional FINISH PUZZLE button.
+          flexShrink: 0 so the top section always wins the height budget.
+          maxHeight + overflowY: auto lets the drawer scroll if opened.
         */}
         <div
           style={{
             flexShrink: 0,
-            height: "clamp(120px, 22vh, 180px)",
+            maxHeight: "clamp(36px, 18vh, 160px)",
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
-            gap: "8px",
+            gap: "6px",
           }}
         >
-          <DiscoveredWordsPanel words={discoveredWords} invalidGuesses={invalidGuesses} />
+          <CollapsibleWordsDrawer words={discoveredWords} invalidGuesses={invalidGuesses} />
 
           {/* Show once all 5 quartiles are found but game hasn't auto-finished */}
           {foundQuartiles.size === 5 && !showCompletion && (
@@ -1036,13 +1019,6 @@ export default function PlayGame({
               🏆 [ FINISH PUZZLE ]
             </button>
           )}
-
-          <p
-            className="text-center text-xs pb-2"
-            style={{ color: "var(--green-dark)", marginTop: "auto" }}
-          >
-            Enter to submit · Escape to clear
-          </p>
         </div>
       </div>
     </>

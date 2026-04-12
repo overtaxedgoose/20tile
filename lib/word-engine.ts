@@ -443,14 +443,19 @@ export function generateShareCard(
   discoveredWords: ValidatedWord[],
   puzzle: Puzzle,
   score: number,
-  puzzleUrl?: string
+  puzzleUrl?: string,
+  puzzleStats?: { totalWords: number; maxScore: number }
 ): string {
   const quartileEmojis = ["🟩", "🟦", "🟨", "🟧", "🟥"];
   const foundQuartiles = getFoundQuartiles(discoveredWords, puzzle);
 
+  const scoreStr = puzzleStats
+    ? `Score: ${score}/${puzzleStats.maxScore} pts`
+    : `Score: ${score} pts`;
+
   const lines: string[] = [
     "20TILE",
-    `Score: ${score} pts`,
+    scoreStr,
     "",
     foundQuartiles.size === 5 ? "🏆 All quartiles found!" : `${foundQuartiles.size}/5 quartiles`,
     "",
@@ -462,7 +467,11 @@ export function generateShareCard(
     .join(" ");
   lines.push(emojiRow);
   lines.push("");
-  lines.push(`${discoveredWords.length} words found`);
+
+  const wordsStr = puzzleStats
+    ? `${discoveredWords.length}/${puzzleStats.totalWords} words found`
+    : `${discoveredWords.length} words found`;
+  lines.push(wordsStr);
   lines.push(puzzleUrl ?? "20tile.app");
 
   return lines.join("\n");
