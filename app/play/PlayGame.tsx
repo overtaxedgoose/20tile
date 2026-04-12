@@ -10,6 +10,7 @@ import {
   computePuzzleStats,
   findAllValidWords,
   generateShareCard,
+  formatElapsedTime,
   shuffleArray,
   type Puzzle,
   type Tile,
@@ -360,7 +361,7 @@ const CLEVERNESS_OPTIONS = [
 ] as const;
 
 function CompletionModal({
-  score, words, puzzle, shareCard, allWordsFound, puzzleId, puzzleNumber, onDismiss,
+  score, words, puzzle, shareCard, allWordsFound, puzzleId, puzzleNumber, elapsedSeconds, onDismiss,
 }: {
   score: number;
   words: ValidatedWord[];
@@ -369,6 +370,7 @@ function CompletionModal({
   allWordsFound: boolean;
   puzzleId?: string;
   puzzleNumber?: number;
+  elapsedSeconds?: number;
   onDismiss: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -439,6 +441,11 @@ function CompletionModal({
         <div className="text-center border rounded py-3" style={{ borderColor: "var(--border)" }}>
           <p className="text-4xl font-bold font-mono tabular-nums text-glow" style={{ color: "var(--green)" }}>{score}</p>
           <p className="text-xs tracking-widest mt-1" style={{ color: "var(--green-muted)" }}>TOTAL POINTS</p>
+          {elapsedSeconds != null && (
+            <p className="text-xs font-mono tabular-nums mt-1" style={{ color: "var(--green-dark)" }}>
+              ⏱ {formatElapsedTime(elapsedSeconds)}
+            </p>
+          )}
         </div>
 
         {quartileWords.length > 0 && (
@@ -629,6 +636,8 @@ export default function PlayGame({
   const [showCompletion, setShowCompletion] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastCounterRef = useRef(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
 
   const addToast = useCallback((message: string, type: Toast["type"], duration = 1800) => {
     const id = ++toastCounterRef.current;
@@ -645,7 +654,8 @@ export default function PlayGame({
   const saveProgress = useCallback((
     words: ValidatedWord[],
     order: Tile[],
-    guesses: string[]
+    guesses: string[],
+    elapsed: number
   ) => {
     if (!progressKey) return;
     try {
@@ -653,6 +663,7 @@ export default function PlayGame({
         discoveredWords: words,
         tileOrder: order,
         invalidGuesses: guesses,
+        elapsedSeconds: elapsed,
       }));
     } catch { /* storage full or unavailable */ }
   }, [progressKey]);
@@ -690,6 +701,9 @@ export default function PlayGame({
           setDiscoveredWords(saved.discoveredWords);
           setScore(saved.discoveredWords.reduce((sum: number, w: ValidatedWord) => sum + w.points, 0));
           setInvalidGuesses(saved.invalidGuesses ?? []);
+          if (typeof saved.elapsedSeconds === "number") {
+            setElapsedSeconds(saved.elapsedSeconds);
+          }
           // Validate that saved tile order matches this puzzle before restoring
           const savedIds = new Set((saved.tileOrder as Tile[]).map((t) => t.id));
           const puzzleIds = new Set(decoded.tiles.map((t) => t.id));
@@ -712,7 +726,10 @@ export default function PlayGame({
         }, 0);
       })
       .catch(() => setError("Failed to load word list. Please refresh."))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setTimerRunning(true);
+      });
   }, [encodedPuzzle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derived: which seed groups have a found quartile
@@ -740,6 +757,7 @@ export default function PlayGame({
       !showCompletion
     ) {
       clearProgress();
+      setTimerRunning(false);
       setShowCompletion(true);
     }
   }, [discoveredWords.length, puzzleStats, showCompletion, clearProgress]);
@@ -747,9 +765,9 @@ export default function PlayGame({
   // Persist progress to localStorage after each change
   useEffect(() => {
     if (puzzle && discoveredWords.length > 0) {
-      saveProgress(discoveredWords, tileOrder, invalidGuesses);
+      saveProgress(discoveredWords, tileOrder, invalidGuesses, elapsedSeconds);
     }
-  }, [discoveredWords, tileOrder, invalidGuesses, puzzle, saveProgress]);
+  }, [discoveredWords, tileOrder, invalidGuesses, elapsedSeconds, puzzle, saveProgress]);
 
   // Selected tiles in tap order
   const selectedTiles = selectedIds
@@ -832,6 +850,21 @@ export default function PlayGame({
     return () => window.removeEventListener("keydown", handler);
   }, [handleSubmit, selectedIds.length]);
 
+  // Track tab visibility so the timer can pause when the player switches away
+  const [tabVisible, setTabVisible] = useState(true);
+  useEffect(() => {
+    const handleVisibility = () => setTabVisible(!document.hidden);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  // Timer — count up every second; pauses automatically when tab is hidden
+  useEffect(() => {
+    if (!timerRunning || !tabVisible) return;
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [timerRunning, tabVisible]);
+
   // Shuffle — locked tiles are always at tileOrder[0..lockCount-1] (invariant
   // maintained by the quartile-pinning logic in handleSubmit). Only the tail
   // (free tiles) is reshuffled. The grid container size never changes.
@@ -849,7 +882,7 @@ export default function PlayGame({
   const puzzleUrl = puzzleNumber != null
     ? `20tile.app/play/${puzzleNumber}`
     : typeof window !== "undefined" ? window.location.href : "20tile.app";
-  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl, puzzleStats ?? undefined) : "";
+  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl, puzzleStats ?? undefined, elapsedSeconds) : "";
 
   // ── Render guards ────────────────────────────────────────────────────────────
 
@@ -891,6 +924,7 @@ export default function PlayGame({
           allWordsFound={puzzleStats != null && discoveredWords.length >= puzzleStats.totalWords}
           puzzleId={puzzleId}
           puzzleNumber={puzzleNumber}
+          elapsedSeconds={elapsedSeconds}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
         />
       )}
@@ -966,6 +1000,14 @@ export default function PlayGame({
                 {puzzleStats?.totalWords != null ? `/${puzzleStats.totalWords}` : ""} words
               </span>
             </div>
+
+            {/* Timer */}
+            <span
+              className="text-xs font-mono tabular-nums flex-none"
+              style={{ color: "var(--green-muted)" }}
+            >
+              ⏱ {formatElapsedTime(elapsedSeconds)}
+            </span>
 
             {/* Quartile progress dots */}
             <div className="flex gap-1 items-center flex-none">
@@ -1054,7 +1096,7 @@ export default function PlayGame({
           {/* Show once all 5 quartiles are found but game hasn't auto-finished */}
           {foundQuartiles.size === 5 && !showCompletion && (
             <button
-              onClick={() => setShowCompletion(true)}
+              onClick={() => { setTimerRunning(false); setShowCompletion(true); }}
               className="w-full py-2 border text-xs font-mono tracking-widest uppercase rounded transition-colors hover:bg-yellow-950"
               style={{ borderColor: "#854d0e", color: "#fde68a", flexShrink: 0 }}
             >

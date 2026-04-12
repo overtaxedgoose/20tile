@@ -439,12 +439,19 @@ export function isPuzzleComplete(
 
 // ─── Share card generation ────────────────────────────────────────────────────
 
+export function formatElapsedTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export function generateShareCard(
   discoveredWords: ValidatedWord[],
   puzzle: Puzzle,
   score: number,
   puzzleUrl?: string,
-  puzzleStats?: { totalWords: number; maxScore: number }
+  puzzleStats?: { totalWords: number; maxScore: number },
+  elapsedSeconds?: number
 ): string {
   const quartileEmojis = ["🟩", "🟦", "🟨", "🟧", "🟥"];
   const foundQuartiles = getFoundQuartiles(discoveredWords, puzzle);
@@ -472,6 +479,11 @@ export function generateShareCard(
     ? `${discoveredWords.length}/${puzzleStats.totalWords} words found`
     : `${discoveredWords.length} words found`;
   lines.push(wordsStr);
+
+  if (elapsedSeconds != null) {
+    lines.push(`⏱ ${formatElapsedTime(elapsedSeconds)}`);
+  }
+
   lines.push(puzzleUrl ?? "20tile.app");
 
   return lines.join("\n");
