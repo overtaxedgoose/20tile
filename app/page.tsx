@@ -35,6 +35,15 @@ export default function Home() {
           </Link>
         </div>
 
+        <div className="border-t" style={{ borderColor: "var(--border)" }} />
+
+        {/* SEO-friendly description */}
+        <p className="text-xs leading-relaxed" style={{ color: "var(--green-dark)" }}>
+          20Tile is a free quartile puzzle builder. Pick 5 words, and we split
+          them into tiles your friends have to reassemble — your own custom
+          quartile game, shareable with a link.
+        </p>
+
       </div>
     </main>
   );
