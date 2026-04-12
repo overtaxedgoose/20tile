@@ -880,9 +880,7 @@ export default function PlayGame({
         */}
         <div
           style={{
-            flex: 1,
-            minHeight: 0,
-            overflow: "hidden",
+            flexShrink: 0,
             display: "flex",
             flexDirection: "column",
             gap: "8px",
@@ -995,8 +993,8 @@ export default function PlayGame({
         */}
         <div
           style={{
-            flexShrink: 0,
-            maxHeight: "clamp(36px, 18vh, 160px)",
+            flex: 1,
+            minHeight: 0,
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
