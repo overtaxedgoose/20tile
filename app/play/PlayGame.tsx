@@ -958,13 +958,10 @@ export default function PlayGame({
           */}
           <div
             style={{
-              flex: 1,
-              minHeight: 0,
               display: "grid",
               gridTemplateColumns: "repeat(4, 1fr)",
               gridTemplateRows: "repeat(5, minmax(0, 60px))",
               gap: "10px",
-              overflow: "hidden",
             }}
           >
             {tileOrder.map((tile) => (
