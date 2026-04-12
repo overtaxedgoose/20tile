@@ -394,6 +394,7 @@ function CompletionModal({
   puzzleStats,
   elapsedSeconds,
   puzzleNumber,
+  puzzleId,
   onDismiss,
   onKeepPlaying,
 }: {
@@ -403,10 +404,23 @@ function CompletionModal({
   puzzleStats: { totalWords: number; maxScore: number } | null;
   elapsedSeconds: number;
   puzzleNumber?: number;
+  puzzleId?: string;
   onDismiss: () => void;
   onKeepPlaying: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [balloonCount, setBalloonCount] = useState(0);
+  const [balloonBouncing, setBalloonBouncing] = useState(false);
+
+  const handleBalloon = async () => {
+    setBalloonCount((n) => n + 1);
+    setBalloonBouncing(true);
+    setTimeout(() => setBalloonBouncing(false), 400);
+    if (puzzleId) {
+      try { await fetch("/api/junior/balloon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ puzzleId }) }); }
+      catch { /* silent fail — balloon is still fun */ }
+    }
+  };
 
   const found3Tiles = getFound3Tiles(words, puzzle);
   const tile3Words = words.filter((w) => w.isQuartile);
@@ -492,6 +506,27 @@ function CompletionModal({
             </div>
           </div>
         )}
+
+        {/* Balloons */}
+        <div className="text-center space-y-2">
+          <p className="text-xs tracking-widest text-slate-500">CELEBRATE THIS PUZZLE</p>
+          <button
+            onClick={handleBalloon}
+            className="text-5xl transition-transform duration-150 active:scale-90 select-none"
+            style={{ transform: balloonBouncing ? "scale(1.35) translateY(-6px)" : "scale(1) translateY(0)", transition: "transform 0.2s ease" }}
+            aria-label="Send a balloon"
+          >
+            🎈
+          </button>
+          {balloonCount > 0 && (
+            <p className="text-xs font-mono text-sky-500 tracking-wider">
+              {balloonCount} balloon{balloonCount !== 1 ? "s" : ""} sent!
+            </p>
+          )}
+          {balloonCount === 0 && (
+            <p className="text-[10px] font-mono text-slate-400 tracking-wider">tap to send a balloon</p>
+          )}
+        </div>
 
         {/* Share */}
         <div className="space-y-2">
@@ -821,6 +856,7 @@ export default function PlayGameJunior({
           puzzleStats={puzzleStats}
           elapsedSeconds={elapsedSeconds}
           puzzleNumber={puzzleNumber}
+          puzzleId={puzzleId}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
           onKeepPlaying={() => setShowCompletion(false)}
         />

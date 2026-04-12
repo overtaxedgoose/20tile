@@ -9,7 +9,7 @@ export default async function JuniorArchivePage() {
 
   const { data: puzzles, error } = await supabase
     .from("junior_puzzles")
-    .select("id, number, title, creator_name, play_count, published_at")
+    .select("id, number, title, creator_name, play_count, balloon_count, published_at")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
@@ -26,7 +26,7 @@ export default async function JuniorArchivePage() {
 
   const rows = (puzzles ?? []) as Pick<
     JuniorPuzzleRow,
-    "id" | "number" | "title" | "creator_name" | "play_count" | "published_at"
+    "id" | "number" | "title" | "creator_name" | "play_count" | "balloon_count" | "published_at"
   >[];
 
   return (
@@ -89,6 +89,11 @@ export default async function JuniorArchivePage() {
                     <span className="text-[10px] font-mono tracking-wider text-slate-600">
                       {p.play_count} play{p.play_count !== 1 ? "s" : ""}
                     </span>
+                    {p.balloon_count > 0 && (
+                      <span className="text-[10px] font-mono tracking-wider text-sky-500">
+                        🎈 {p.balloon_count}
+                      </span>
+                    )}
                     <span className="text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity text-sky-600 font-bold">
                       PLAY →
                     </span>

@@ -24,6 +24,7 @@ export interface JuniorPuzzleRow {
   creator_name: string | null;
   status: PuzzleStatus;
   play_count: number;
+  balloon_count: number;
   published_at: string;
 }
 
@@ -63,6 +64,10 @@ export interface Database {
         Returns: undefined;
       };
       increment_junior_play_count: {
+        Args: { puzzle_id: string };
+        Returns: undefined;
+      };
+      add_junior_balloon: {
         Args: { puzzle_id: string };
         Returns: undefined;
       };
