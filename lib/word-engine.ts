@@ -221,39 +221,30 @@ export function evaluateSelection(
     return { word: "", valid: false, isQuartile: false, points: 0 };
   }
 
-  // All permutations of selected tiles to allow any order
-  const perms = permutations(tiles);
-  let bestWord = "";
-  let bestIsQuartile = false;
+  // Tiles must be selected in the correct order — no permutation checking.
+  // "NG" + "KI" stays "NGKI", not "KING". Players must tap tiles in the right order.
+  const word = tiles.map((t) => t.letters).join("");
 
-  for (const perm of perms) {
-    const word = perm.map((t) => t.letters).join("");
-    if (wordSet.has(word)) {
-      bestWord = word;
-      // Check if this is a quartile (all 4 tiles from same seed, in any order)
-      if (perm.length === 4) {
-        const seedIdx = perm[0].seedIndex;
-        const allSameSeed = perm.every((t) => t.seedIndex === seedIdx);
-        const allTilesUsed =
-          puzzle.seedTiles[seedIdx]?.every((st) =>
-            perm.some((t) => t.id === st.id)
-          ) ?? false;
-        if (allSameSeed && allTilesUsed) {
-          bestIsQuartile = true;
-          break; // Quartile found — stop searching
-        }
-      }
-      if (!bestIsQuartile) {
-        // Keep looking for quartile, but record first valid
-        if (!bestWord) bestWord = word;
-      }
+  if (!wordSet.has(word)) {
+    return { word: "", valid: false, isQuartile: false, points: 0 };
+  }
+
+  // Check if this is a quartile (all 4 tiles from same seed, in selection order)
+  let isQuartile = false;
+  if (tiles.length === 4) {
+    const seedIdx = tiles[0].seedIndex;
+    const allSameSeed = tiles.every((t) => t.seedIndex === seedIdx);
+    const allTilesUsed =
+      puzzle.seedTiles[seedIdx]?.every((st) =>
+        tiles.some((t) => t.id === st.id)
+      ) ?? false;
+    if (allSameSeed && allTilesUsed) {
+      isQuartile = true;
     }
   }
 
-  const valid = bestWord.length > 0;
-  const points = valid ? scoreForTileCount(tiles.length) : 0;
-
-  return { word: bestWord, valid, isQuartile: bestIsQuartile, points };
+  const points = scoreForTileCount(tiles.length);
+  return { word, valid: true, isQuartile, points };
 }
 
 /**
