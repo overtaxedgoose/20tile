@@ -8,16 +8,17 @@ type ModalState = "idle" | "submitting" | "success" | "error";
 
 interface Props {
   defaultSection?: Section;
+  className?: string;
 }
 
-export function ReportWordButton({ defaultSection }: Props) {
+export function ReportWordButton({ defaultSection, className }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-xs opacity-40 hover:opacity-70 transition-opacity font-mono tracking-wider"
+        className={className ?? "text-xs opacity-40 hover:opacity-70 transition-opacity font-mono tracking-wider"}
         style={{ background: "none", border: "none", cursor: "pointer" }}
       >
         report a word

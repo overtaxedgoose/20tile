@@ -19,8 +19,8 @@ export default function JuniorHome() {
               ← 20TILE
             </Link>
           </div>
-          <h1 className="text-6xl font-bold tracking-widest" style={{ color: "#0369a1" }}>
-            20TILE
+          <h1 className="text-5xl font-bold tracking-widest" style={{ color: "#0369a1" }}>
+            20TILE — JR
           </h1>
           <div
             className="inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold tracking-widest font-mono"
@@ -60,7 +60,10 @@ export default function JuniorHome() {
 
         {/* Word report */}
         <div className="pt-2">
-          <ReportWordButton defaultSection="junior" />
+          <ReportWordButton
+            defaultSection="junior"
+            className="text-xs font-mono tracking-wider text-slate-600 hover:text-slate-900 transition-colors"
+          />
         </div>
 
       </div>
