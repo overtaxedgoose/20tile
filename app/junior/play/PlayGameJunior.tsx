@@ -221,7 +221,7 @@ function StagingChips({
           className="w-full flex items-center justify-center rounded-xl border-2 border-dashed border-slate-200"
           style={{ height: "44px" }}
         >
-          <span className="text-xs font-mono tracking-widest text-slate-500 uppercase">
+          <span className="text-xs font-mono tracking-widest text-slate-700 uppercase">
             Select up to 3 tiles
           </span>
         </div>
@@ -274,7 +274,7 @@ function ActionBar({
     <div style={{ flexShrink: 0, display: "flex", gap: "8px", alignItems: "stretch" }}>
       <button
         onClick={onShuffle}
-        className="flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all hover:bg-slate-50 text-slate-400"
+        className="flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all hover:bg-slate-50 text-slate-600"
         style={{ width: "48px", height: "44px", fontSize: "18px" }}
         aria-label="Shuffle tiles"
       >
@@ -301,7 +301,7 @@ function ActionBar({
       <button
         onClick={onClear}
         disabled={selectedCount === 0}
-        className="flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 text-slate-400"
+        className="flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 text-slate-600"
         style={{ width: "48px", height: "44px", fontSize: "16px" }}
         aria-label="Clear selection"
       >
@@ -321,7 +321,7 @@ function ToastList({ toasts }: { toasts: Toast[] }) {
           success: "border-emerald-300 bg-emerald-50 text-emerald-700",
           error:   "border-red-300 bg-red-50 text-red-600",
           tile3:   "border-amber-300 bg-amber-50 text-amber-700",
-          info:    "border-slate-200 bg-white text-slate-500",
+          info:    "border-slate-200 bg-white text-slate-700",
         };
         return (
           <div
@@ -349,7 +349,7 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
       </summary>
       <div className="pt-2 pb-1 space-y-2">
         {sorted.length === 0 ? (
-          <p className="text-xs text-slate-500">No words found yet.</p>
+          <p className="text-xs text-slate-700">No words found yet.</p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {sorted.map((w, i) => (
@@ -368,12 +368,12 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
         )}
         {invalidGuesses.length > 0 && (
           <div className="pt-1">
-            <p className="text-xs mb-1 text-slate-500">
+            <p className="text-xs mb-1 text-slate-700">
               {invalidGuesses.length} invalid guess{invalidGuesses.length !== 1 ? "es" : ""}
             </p>
             <div className="flex flex-wrap gap-1">
               {[...new Set(invalidGuesses)].map((g, i) => (
-                <span key={i} className="text-xs font-mono uppercase px-1.5 py-0.5 rounded border border-slate-200 text-slate-500">
+                <span key={i} className="text-xs font-mono uppercase px-1.5 py-0.5 rounded border border-slate-200 text-slate-700">
                   {g}
                 </span>
               ))}
@@ -443,7 +443,7 @@ function CompletionModal({
           <h2 className="text-xl font-bold tracking-widest font-mono text-sky-700">
             {allWordsFound ? "ALL WORDS FOUND!" : "15 WORDS!"}
           </h2>
-          <p className="text-xs tracking-widest text-slate-500">
+          <p className="text-xs tracking-widest text-slate-700">
             {found3Tiles.size}/5 3tiles · {words.length} words found
           </p>
         </div>
@@ -451,8 +451,8 @@ function CompletionModal({
         {/* Score */}
         <div className="text-center border-2 border-slate-100 rounded-xl py-3 bg-slate-50">
           <p className="text-4xl font-bold font-mono tabular-nums text-sky-600">{score}</p>
-          <p className="text-xs tracking-widest mt-1 text-slate-500">TOTAL POINTS</p>
-          <p className="text-xs font-mono tabular-nums mt-1 text-slate-500">
+          <p className="text-xs tracking-widest mt-1 text-slate-700">TOTAL POINTS</p>
+          <p className="text-xs font-mono tabular-nums mt-1 text-slate-700">
             ⏱ {formatElapsedTime(elapsedSeconds)}
           </p>
         </div>
@@ -460,11 +460,11 @@ function CompletionModal({
         {/* 3tiles found */}
         {tile3Words.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs tracking-widest text-slate-500">3TILES FOUND</p>
+            <p className="text-xs tracking-widest text-slate-700">3TILES FOUND</p>
             {tile3Words.map((w, i) => (
               <div key={i} className="flex justify-between text-xs font-mono">
                 <span className="text-amber-600 uppercase tracking-wider font-bold">{w.word}</span>
-                <span className="text-slate-500">3 pts</span>
+                <span className="text-slate-700">3 pts</span>
               </div>
             ))}
           </div>
@@ -473,7 +473,7 @@ function CompletionModal({
         {/* Other words */}
         {otherWords.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs tracking-widest text-slate-500">OTHER WORDS ({otherWords.length})</p>
+            <p className="text-xs tracking-widest text-slate-700">OTHER WORDS ({otherWords.length})</p>
             <div className="flex flex-wrap gap-1">
               {[...otherWords].sort((a, b) => b.points - a.points).slice(0, 12).map((w, i) => (
                 <span key={i} className="text-xs font-mono uppercase px-1.5 py-0.5 rounded-lg border border-slate-200 text-slate-600">
@@ -481,7 +481,7 @@ function CompletionModal({
                 </span>
               ))}
               {otherWords.length > 12 && (
-                <span className="text-xs text-slate-500">+{otherWords.length - 12} more</span>
+                <span className="text-xs text-slate-700">+{otherWords.length - 12} more</span>
               )}
             </div>
           </div>
@@ -489,8 +489,8 @@ function CompletionModal({
 
         {/* Share */}
         <div className="space-y-2">
-          <p className="text-xs tracking-widest text-slate-500">SHARE YOUR SCORE</p>
-          <pre className="text-xs font-mono whitespace-pre p-3 rounded-xl border-2 border-slate-100 leading-relaxed bg-slate-50 text-slate-500">
+          <p className="text-xs tracking-widest text-slate-700">SHARE YOUR SCORE</p>
+          <pre className="text-xs font-mono whitespace-pre p-3 rounded-xl border-2 border-slate-100 leading-relaxed bg-slate-50 text-slate-700">
             {shareText}
           </pre>
           <button
@@ -513,7 +513,7 @@ function CompletionModal({
           )}
           <Link
             href="/junior"
-            className="block w-full py-2 border-2 border-slate-200 text-xs font-mono tracking-widest uppercase rounded-xl transition-all text-center hover:bg-slate-50 text-slate-500"
+            className="block w-full py-2 border-2 border-slate-200 text-xs font-mono tracking-widest uppercase rounded-xl transition-all text-center hover:bg-slate-50 text-slate-700"
           >
             ← BACK TO JUNIOR
           </Link>
@@ -777,7 +777,7 @@ export default function PlayGameJunior({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: "#f0f9ff" }}>
-        <p className="text-sm tracking-widest animate-pulse text-slate-400">Loading puzzle…</p>
+        <p className="text-sm tracking-widest animate-pulse text-slate-600">Loading puzzle…</p>
       </div>
     );
   }
@@ -836,7 +836,7 @@ export default function PlayGameJunior({
           <header style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "8px" }}>
             <Link
               href="/junior"
-              className="text-xs tracking-widest opacity-50 hover:opacity-100 transition-opacity font-mono flex-none text-slate-500"
+              className="text-xs tracking-widest opacity-50 hover:opacity-100 transition-opacity font-mono flex-none text-slate-700"
             >
               ← JR
             </Link>
@@ -952,7 +952,7 @@ export default function PlayGameJunior({
                   {Object.entries(wordsByLetter).sort(([a], [b]) => a.localeCompare(b)).map(([letter, count]) => (
                     <span key={letter} className="font-mono text-xs inline-flex items-baseline gap-1">
                       <span className="font-bold uppercase text-slate-600">{letter}</span>
-                      <span className="text-slate-500">{count}</span>
+                      <span className="text-slate-700">{count}</span>
                     </span>
                   ))}
                 </div>

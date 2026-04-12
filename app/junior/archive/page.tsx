@@ -38,7 +38,7 @@ export default async function JuniorArchivePage() {
           <div className="flex items-center gap-4">
             <Link
               href="/junior"
-              className="text-xs tracking-widest opacity-60 hover:opacity-100 transition-opacity font-mono text-slate-500"
+              className="text-xs tracking-widest font-mono text-slate-600 hover:text-slate-900 transition-colors"
             >
               ← JUNIOR HOME
             </Link>
@@ -46,16 +46,16 @@ export default async function JuniorArchivePage() {
           <h1 className="text-2xl font-bold tracking-widest font-mono" style={{ color: "#0369a1" }}>
             JUNIOR PUZZLES
           </h1>
-          <p className="text-xs tracking-widest text-slate-400 font-mono">
+          <p className="text-xs tracking-widest text-slate-600 font-mono">
             {rows.length} puzzle{rows.length !== 1 ? "s" : ""} available
           </p>
         </div>
 
-        <div className="border-t border-slate-200" />
+        <div className="border-t border-slate-300" />
 
         {/* Puzzle list */}
         {rows.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-700">
             No puzzles yet. Be the first —{" "}
             <Link href="/junior/create" className="underline text-sky-600">
               create one
@@ -68,7 +68,7 @@ export default async function JuniorArchivePage() {
               <Link
                 key={p.id}
                 href={`/junior/play/${p.number}`}
-                className="block border-2 border-slate-200 rounded-xl px-4 py-3 transition-all hover:border-sky-300 hover:bg-white group bg-white/60 shadow-sm"
+                className="block border-2 border-slate-200 rounded-xl px-4 py-3 transition-all hover:border-sky-300 hover:bg-white group bg-white/80 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -77,19 +77,19 @@ export default async function JuniorArchivePage() {
                         #{p.number}
                       </span>
                       {p.title && (
-                        <span className="text-sm font-mono font-bold text-slate-700">{p.title}</span>
+                        <span className="text-sm font-mono font-bold text-slate-800">{p.title}</span>
                       )}
                       {p.creator_name && (
-                        <span className="text-xs font-mono text-slate-400">by {p.creator_name}</span>
+                        <span className="text-xs font-mono text-slate-600">by {p.creator_name}</span>
                       )}
                     </div>
                   </div>
 
                   <div className="flex-none flex flex-col items-end gap-1">
-                    <span className="text-[10px] font-mono tracking-wider text-slate-400">
+                    <span className="text-[10px] font-mono tracking-wider text-slate-600">
                       {p.play_count} play{p.play_count !== 1 ? "s" : ""}
                     </span>
-                    <span className="text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity text-sky-600">
+                    <span className="text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity text-sky-600 font-bold">
                       PLAY →
                     </span>
                   </div>
@@ -99,7 +99,7 @@ export default async function JuniorArchivePage() {
           </div>
         )}
 
-        <div className="border-t border-slate-200 pt-6">
+        <div className="border-t border-slate-300 pt-6">
           <Link
             href="/junior/create"
             className="block w-full py-3 border-2 border-sky-400 text-center tracking-widest uppercase text-xs font-mono font-bold transition-all hover:bg-sky-50 rounded-xl text-sky-700"

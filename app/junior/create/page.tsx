@@ -244,7 +244,7 @@ function SeedRow({
               </div>
             ))}
           </div>
-          <div className="mt-1 flex pl-0 text-xs text-slate-400">
+          <div className="mt-1 flex pl-0 text-xs text-slate-600">
             <span className="flex-1 text-center">{state.tiles[0]?.length}L</span>
             <span className="w-6" />
             <span className="flex-1 text-center">{state.tiles[1]?.length}L</span>
@@ -263,7 +263,7 @@ function ValidationPanel({ result }: { result: ValidationState | null }) {
   if (result.checking) {
     return (
       <div className="border-2 border-slate-200 rounded-xl p-4 text-sm animate-pulse bg-white">
-        <span className="text-slate-500">Checking your puzzle…</span>
+        <span className="text-slate-700">Checking your puzzle…</span>
       </div>
     );
   }
@@ -313,7 +313,7 @@ function ValidationPanel({ result }: { result: ValidationState | null }) {
       )}
 
       {result.warnings.map((w, i) => (
-        <p key={i} className="text-slate-500 text-xs">ℹ {w}</p>
+        <p key={i} className="text-slate-700 text-xs">ℹ {w}</p>
       ))}
 
       {allClear && (
@@ -324,20 +324,20 @@ function ValidationPanel({ result }: { result: ValidationState | null }) {
       {result.wordGroups.length > 0 && (
         <div className="mt-3 pt-3 space-y-4 border-t border-slate-100">
           <div className="flex items-baseline justify-between">
-            <p className="text-xs font-bold tracking-wide text-slate-500">DISCOVERABLE WORDS</p>
+            <p className="text-xs font-bold tracking-wide text-slate-700">DISCOVERABLE WORDS</p>
             <div className="flex items-baseline gap-4 text-xs font-mono tabular-nums">
               {result.duplicatePaths.length > 0 && (
                 <span className="text-orange-500">
                   {result.duplicatePaths.length} dup{result.duplicatePaths.length !== 1 ? "s" : ""}
                 </span>
               )}
-              <span className="text-slate-500">{result.totalWords} words</span>
+              <span className="text-slate-700">{result.totalWords} words</span>
               <span className="text-emerald-600 font-bold">{result.totalScore} pts max</span>
             </div>
           </div>
 
           {result.totalWords === 0 && (
-            <p className="text-xs text-slate-400">No valid words found with current tile splits.</p>
+            <p className="text-xs text-slate-600">No valid words found with current tile splits.</p>
           )}
 
           {result.wordGroups.map(({ count, pts, words }) => {
@@ -346,8 +346,8 @@ function ValidationPanel({ result }: { result: ValidationState | null }) {
             return (
               <div key={count} className="space-y-1.5">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-xs font-bold tracking-wide text-slate-500">{labels[count]}</span>
-                  <span className="text-xs tabular-nums text-slate-400">{pts}pt · {words.length} found</span>
+                  <span className="text-xs font-bold tracking-wide text-slate-700">{labels[count]}</span>
+                  <span className="text-xs tabular-nums text-slate-600">{pts}pt · {words.length} found</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {words.map(({ word, is3Tile, isDuplicate }) => {
@@ -378,7 +378,7 @@ function ValidationPanel({ result }: { result: ValidationState | null }) {
             );
           })}
 
-          <div className="flex flex-wrap gap-4 pt-1 text-xs border-t border-slate-100 text-slate-400">
+          <div className="flex flex-wrap gap-4 pt-1 text-xs border-t border-slate-100 text-slate-600">
             <span className="text-amber-600">★ 3tile (3pts)</span>
             <span className="text-orange-500">⚠ duplicate path</span>
           </div>
@@ -682,16 +682,16 @@ export default function JuniorCreatePage() {
         <div className="flex items-center justify-between">
           <Link
             href="/junior"
-            className="text-xs tracking-widest opacity-60 hover:opacity-100 transition-opacity font-mono text-slate-500"
+            className="text-xs tracking-widest opacity-60 hover:opacity-100 transition-opacity font-mono text-slate-700"
           >
             ← BACK
           </Link>
-          <span className="text-xs tracking-widest text-slate-400 font-mono">JUNIOR PUZZLE CREATOR</span>
+          <span className="text-xs tracking-widest text-slate-600 font-mono">JUNIOR PUZZLE CREATOR</span>
         </div>
         <h1 className="text-3xl font-bold tracking-widest" style={{ color: "#0369a1" }}>
           20TILE JR
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-700">
           Pick 5 words with 6–10 letters each. Each word gets split into 3 tiles.
         </p>
       </header>
@@ -699,7 +699,7 @@ export default function JuniorCreatePage() {
       <div className="border-t border-slate-200" />
 
       {!wordSet && (
-        <p className="text-sm animate-pulse text-slate-400">Loading word list…</p>
+        <p className="text-sm animate-pulse text-slate-600">Loading word list…</p>
       )}
 
       {/* Seed rows */}
@@ -720,7 +720,7 @@ export default function JuniorCreatePage() {
       {/* All tiles preview */}
       {allSeedsReady && (
         <div className="space-y-2">
-          <p className="text-xs tracking-widest text-slate-400 font-mono">ALL 15 TILES</p>
+          <p className="text-xs tracking-widest text-slate-600 font-mono">ALL 15 TILES</p>
           <div className="flex flex-wrap gap-2">
             {seeds.flatMap((s, si) =>
               s.tiles.map((tile, ti) => {
@@ -749,7 +749,7 @@ export default function JuniorCreatePage() {
             transition-all rounded-xl font-bold
             ${allSeedsReady && !validating
               ? "hover:bg-sky-50 cursor-pointer opacity-100 border-sky-400 text-sky-700 bg-white"
-              : "opacity-30 cursor-not-allowed border-slate-300 text-slate-400 bg-white"
+              : "opacity-30 cursor-not-allowed border-slate-300 text-slate-600 bg-white"
             }
           `}
         >
@@ -767,7 +767,7 @@ export default function JuniorCreatePage() {
               transition-all rounded-xl font-bold
               ${validation?.ok
                 ? "hover:bg-sky-50 cursor-pointer opacity-100 border-sky-500 text-sky-700 bg-white"
-                : "opacity-30 cursor-not-allowed border-slate-300 text-slate-400 bg-white"
+                : "opacity-30 cursor-not-allowed border-slate-300 text-slate-600 bg-white"
               }
             `}
           >
@@ -784,7 +784,7 @@ export default function JuniorCreatePage() {
                 PUZZLE #{publishedNumber} PUBLISHED!
               </p>
             </div>
-            <div className="text-xs break-all font-mono p-2 rounded-lg border border-slate-200 text-center text-slate-500 bg-slate-50">
+            <div className="text-xs break-all font-mono p-2 rounded-lg border border-slate-200 text-center text-slate-700 bg-slate-50">
               20tile.app/junior/play/{publishedNumber}
             </div>
             <div className="flex gap-2">
@@ -806,7 +806,7 @@ export default function JuniorCreatePage() {
               </button>
               <a
                 href={`/junior/play/${publishedNumber}`}
-                className="flex-1 py-2 border-2 border-slate-300 text-xs tracking-widest uppercase font-mono text-center transition-all rounded-xl hover:bg-slate-50 text-slate-500"
+                className="flex-1 py-2 border-2 border-slate-300 text-xs tracking-widest uppercase font-mono text-center transition-all rounded-xl hover:bg-slate-50 text-slate-700"
               >
                 [ PLAY NOW ]
               </a>
@@ -817,14 +817,14 @@ export default function JuniorCreatePage() {
         {/* Publish form */}
         {(publishStage === "form" || publishStage === "submitting" || publishStage === "error") && (
           <div className="border-2 border-slate-200 rounded-xl p-4 space-y-4 bg-white">
-            <p className="text-xs tracking-widest text-slate-500 font-mono">PUBLISH PUZZLE</p>
+            <p className="text-xs tracking-widest text-slate-700 font-mono">PUBLISH PUZZLE</p>
 
             {publishError && <p className="text-xs text-red-500">{publishError}</p>}
 
             {publishStage !== "error" && (
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs tracking-widest text-slate-400">PUZZLE TITLE (optional)</label>
+                  <label className="text-xs tracking-widest text-slate-600">PUZZLE TITLE (optional)</label>
                   <input
                     type="text"
                     value={puzzleTitle}
@@ -836,7 +836,7 @@ export default function JuniorCreatePage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs tracking-widest text-slate-400">YOUR NAME (optional)</label>
+                  <label className="text-xs tracking-widest text-slate-600">YOUR NAME (optional)</label>
                   <input
                     type="text"
                     value={creatorName}
@@ -852,7 +852,7 @@ export default function JuniorCreatePage() {
 
             {publishStage === "error" && fallbackUrl && (
               <div className="space-y-2">
-                <div className="text-xs break-all font-mono p-2 rounded-lg border border-slate-200 text-slate-500 bg-slate-50">
+                <div className="text-xs break-all font-mono p-2 rounded-lg border border-slate-200 text-slate-700 bg-slate-50">
                   {fallbackUrl}
                 </div>
                 <div className="flex gap-2">
@@ -866,7 +866,7 @@ export default function JuniorCreatePage() {
                     href={fallbackUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 py-2 border-2 border-slate-300 text-xs tracking-widest uppercase font-mono text-center transition-all rounded-xl hover:bg-slate-50 text-slate-500"
+                    className="flex-1 py-2 border-2 border-slate-300 text-xs tracking-widest uppercase font-mono text-center transition-all rounded-xl hover:bg-slate-50 text-slate-700"
                   >
                     [ OPEN ]
                   </a>
@@ -883,7 +883,7 @@ export default function JuniorCreatePage() {
                     flex-1 py-2 border-2 text-sm tracking-widest uppercase font-mono
                     transition-all rounded-xl font-bold
                     ${publishStage === "submitting"
-                      ? "opacity-50 cursor-not-allowed border-slate-300 text-slate-400 animate-pulse"
+                      ? "opacity-50 cursor-not-allowed border-slate-300 text-slate-600 animate-pulse"
                       : "hover:bg-sky-50 cursor-pointer border-sky-500 text-sky-700"
                     }
                   `}
@@ -893,7 +893,7 @@ export default function JuniorCreatePage() {
               )}
               <button
                 onClick={() => { setPublishStage("idle"); setPublishError(null); setFallbackUrl(null); }}
-                className="px-4 py-2 border-2 border-slate-200 text-xs tracking-widest uppercase font-mono transition-all rounded-xl hover:bg-slate-50 text-slate-500"
+                className="px-4 py-2 border-2 border-slate-200 text-xs tracking-widest uppercase font-mono transition-all rounded-xl hover:bg-slate-50 text-slate-700"
               >
                 CANCEL
               </button>
