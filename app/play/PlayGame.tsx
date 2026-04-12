@@ -903,7 +903,7 @@ export default function PlayGame({
         on the page — everything either fits inside it or scrolls within it.
       */}
       <div
-        className="max-w-lg mx-auto"
+        className="max-w-sm mx-auto"
         style={{
           display: "flex",
           flexDirection: "column",
