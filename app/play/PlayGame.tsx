@@ -58,38 +58,37 @@ function TileCell({
   let bgCls: string;
   let textCls: string;
   let shadowCls = "";
-  let scaleCls = "";
 
   if (isLocked && isSelected && qColor) {
-    borderCls = "border-white";
+    // Found quartile tile that's also re-selected: bright outline + quartile fill
+    borderCls = "border-white/80";
     bgCls = qColor.bg;
     textCls = "text-white";
-    shadowCls = "shadow-[0_0_16px_rgba(255,255,255,0.5)]";
-    scaleCls = "";
+    shadowCls = "shadow-[0_0_20px_rgba(255,255,255,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.7)]";
   } else if (isLocked && qColor) {
+    // Found quartile tile at rest: subtle depth with a hint of quartile glow
     borderCls = qColor.border;
     bgCls = qColor.bg;
     textCls = qColor.text;
-    shadowCls = "hover:shadow-[0_0_8px_rgba(255,255,255,0.15)]";
-    scaleCls = "";
+    shadowCls = "shadow-[0_3px_8px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.06)] hover:shadow-[0_3px_12px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.1)] active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)]";
   } else if (isSelected) {
-    borderCls = "border-green-300";
-    bgCls = "bg-green-900";
+    // Actively selected (free) tile: confident green fill + outer glow
+    borderCls = "border-green-400/80";
+    bgCls = "bg-green-950";
     textCls = "text-green-100";
-    shadowCls = "shadow-[0_0_16px_rgba(0,255,65,0.6)]";
-    scaleCls = "";
+    shadowCls = "shadow-[0_0_18px_rgba(0,255,65,0.45),inset_0_1px_0_rgba(0,255,65,0.35)] active:shadow-[0_0_10px_rgba(0,255,65,0.3),inset_0_2px_6px_rgba(0,0,0,0.7)]";
   } else {
-    borderCls = "border-green-800";
-    bgCls = "bg-black";
+    // Default unselected: raised-tile look via drop shadow + inner top highlight
+    borderCls = "border-green-900/80";
+    bgCls = "bg-[#060d06]";
     textCls = "text-green-400";
-    shadowCls = "hover:shadow-[0_0_8px_rgba(0,255,65,0.2)]";
-    scaleCls = "";
+    shadowCls = "shadow-[0_3px_8px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(0,255,65,0.12)] hover:shadow-[0_3px_14px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(0,255,65,0.22),0_0_10px_rgba(0,255,65,0.1)] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(0,255,65,0.05)]";
   }
 
   // w-full h-full: tile fills the grid cell whose dimensions are set by the
   // grid container (not by this element). No scale transforms — they cause
   // mobile browsers to incorrectly recalculate grid row heights.
-  const sizeClass = "w-full h-full text-2xl sm:text-3xl";
+  const sizeClass = "w-full h-full text-xl sm:text-2xl";
 
   return (
     <button
@@ -98,16 +97,16 @@ function TileCell({
       aria-label={`Tile ${tile.letters}`}
       className={`
         relative flex items-center justify-center
-        border-2 rounded-xl
-        font-mono font-bold tracking-wider lowercase
+        border rounded-2xl
+        font-mono font-bold tracking-wide lowercase
         transition-all duration-150 select-none
-        ${borderCls} ${bgCls} ${textCls} ${shadowCls} ${scaleCls} ${sizeClass}
+        ${borderCls} ${bgCls} ${textCls} ${shadowCls} ${sizeClass}
         ${shake ? "animate-shake" : ""}
       `}
     >
       {tile.letters}
       {isLocked && (
-        <span className={`absolute top-0.5 right-0.5 text-[8px] leading-none ${qColor?.text}`}>★</span>
+        <span className={`absolute top-1 right-1 text-[7px] leading-none opacity-70 ${qColor?.text}`}>★</span>
       )}
     </button>
   );
@@ -964,7 +963,7 @@ export default function PlayGame({
               display: "grid",
               gridTemplateColumns: "repeat(4, 1fr)",
               gridTemplateRows: "repeat(5, 1fr)",
-              gap: "8px",
+              gap: "10px",
               overflow: "hidden",
             }}
           >
