@@ -962,7 +962,7 @@ export default function PlayGame({
               minHeight: 0,
               display: "grid",
               gridTemplateColumns: "repeat(4, 1fr)",
-              gridTemplateRows: "repeat(5, 1fr)",
+              gridTemplateRows: "repeat(5, minmax(0, 60px))",
               gap: "10px",
               overflow: "hidden",
             }}
