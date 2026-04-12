@@ -280,7 +280,7 @@ function WordsByLetterHint({ letterCounts }: { letterCounts: Record<string, numb
           {entries.map(([letter, count]) => (
             <span key={letter} className="font-mono text-xs inline-flex items-baseline gap-1">
               <span className="font-bold uppercase" style={{ color: "var(--green-muted)" }}>{letter}</span>
-              <span style={{ color: "var(--green-dark)" }}>{count}</span>
+              <span style={{ color: "#9ca3af" }}>{count}</span>
             </span>
           ))}
         </div>
@@ -318,7 +318,6 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
                 }`}
               >
                 {w.word}
-                <span className="opacity-40 font-normal ml-1">{w.points}p</span>
               </span>
             ))}
           </div>
