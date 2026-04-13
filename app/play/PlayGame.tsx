@@ -174,41 +174,39 @@ function StagingChips({
 }
 
 // ─── ActionBar ────────────────────────────────────────────────────────────────
-// Three-button row below the tile grid: shuffle | submit | clear.
+// Two-row control strip below the tile grid:
+//   Row 1: Submit (full width)
+//   Row 2: Shuffle | Lock toggle | Clear
 
 function ActionBar({
   onShuffle,
   onSubmit,
   onClear,
+  onToggleLock,
   canSubmit,
   shaking,
   selectedCount,
+  isLocked,
+  hasDiscoveredQuartiles,
 }: {
   onShuffle: () => void;
   onSubmit: () => void;
   onClear: () => void;
+  onToggleLock: () => void;
   canSubmit: boolean;
   shaking: boolean;
   selectedCount: number;
+  isLocked: boolean;
+  hasDiscoveredQuartiles: boolean;
 }) {
   return (
-    <div style={{ flexShrink: 0, display: "flex", gap: "8px", alignItems: "stretch" }}>
-      {/* Shuffle */}
-      <button
-        onClick={onShuffle}
-        className="flex items-center justify-center border rounded-lg transition-all hover:bg-green-950"
-        style={{ borderColor: "var(--border)", color: "var(--green-muted)", width: "48px", height: "44px", fontSize: "18px" }}
-        aria-label="Shuffle tiles"
-      >
-        ⟳
-      </button>
-
-      {/* Submit — prominent center button */}
+    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Row 1 — Submit */}
       <button
         onClick={onSubmit}
         disabled={!canSubmit}
         className={`
-          flex-1 border-2 text-sm font-mono font-bold tracking-widest uppercase rounded-lg
+          w-full border-2 text-sm font-mono font-bold tracking-widest uppercase rounded-lg
           transition-all
           ${canSubmit ? "hover:bg-green-900 cursor-pointer" : "opacity-30 cursor-not-allowed"}
           ${shaking ? "animate-shake" : ""}
@@ -218,16 +216,45 @@ function ActionBar({
         ✓ SUBMIT{selectedCount > 0 ? ` (${selectedCount})` : ""}
       </button>
 
-      {/* Clear */}
-      <button
-        onClick={onClear}
-        disabled={selectedCount === 0}
-        className="flex items-center justify-center border rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-green-950"
-        style={{ borderColor: "var(--border)", color: "var(--green-muted)", width: "48px", height: "44px", fontSize: "16px" }}
-        aria-label="Clear selection"
-      >
-        ✕
-      </button>
+      {/* Row 2 — Shuffle | Lock | Clear */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        {/* Shuffle */}
+        <button
+          onClick={onShuffle}
+          className="flex-1 flex items-center justify-center border rounded-lg transition-all hover:bg-green-950"
+          style={{ borderColor: "var(--border)", color: "var(--green-muted)", height: "44px", fontSize: "18px" }}
+          aria-label="Shuffle tiles"
+        >
+          ⟳
+        </button>
+
+        {/* Lock / Unlock toggle */}
+        <button
+          onClick={onToggleLock}
+          disabled={!hasDiscoveredQuartiles}
+          className="flex-1 flex items-center justify-center border rounded-lg transition-all disabled:opacity-25 disabled:cursor-not-allowed hover:bg-green-950"
+          style={{
+            borderColor: hasDiscoveredQuartiles && !isLocked ? "var(--green)" : "var(--border)",
+            color: hasDiscoveredQuartiles && !isLocked ? "var(--green)" : "var(--green-muted)",
+            height: "44px",
+            fontSize: "18px",
+          }}
+          aria-label={isLocked ? "Unlock discovered quartiles" : "Lock discovered quartiles"}
+        >
+          {isLocked ? "🔒" : "🔓"}
+        </button>
+
+        {/* Clear */}
+        <button
+          onClick={onClear}
+          disabled={selectedCount === 0}
+          className="flex-1 flex items-center justify-center border rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-green-950"
+          style={{ borderColor: "var(--border)", color: "var(--green-muted)", height: "44px", fontSize: "16px" }}
+          aria-label="Clear selection"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }
@@ -641,6 +668,9 @@ export default function PlayGame({
   const toastCounterRef = useRef(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  // true = discovered quartile tiles are pinned to top rows (default)
+  // false = all tiles move freely together
+  const [quartilesPinned, setQuartilesPinned] = useState(true);
 
   const addToast = useCallback((message: string, type: Toast["type"], duration = 1800) => {
     const id = ++toastCounterRef.current;
@@ -880,18 +910,42 @@ export default function PlayGame({
     return () => clearInterval(interval);
   }, [timerRunning, tabVisible]);
 
-  // Shuffle — locked tiles are always at tileOrder[0..lockCount-1] (invariant
-  // maintained by the quartile-pinning logic in handleSubmit). Only the tail
-  // (free tiles) is reshuffled. The grid container size never changes.
+  // Shuffle — when pinned, only the free tail (after locked quartile rows) is
+  // reshuffled. When unpinned, all 20 tiles are shuffled together.
   const handleShuffle = useCallback(() => {
     setTileOrder((prev) => {
+      if (!quartilesPinned) return shuffleArray([...prev]);
       const lockCount = foundQuartiles.size * 4;
       return [
         ...prev.slice(0, lockCount),
         ...shuffleArray([...prev.slice(lockCount)]),
       ];
     });
-  }, [foundQuartiles]);
+  }, [foundQuartiles, quartilesPinned]);
+
+  // Toggle lock — pins or unpins discovered quartile tiles.
+  const handleToggleLock = useCallback(() => {
+    if (!puzzle) return;
+
+    if (quartilesPinned) {
+      // Unpin: release all tiles into a single shuffled pool.
+      setTileOrder((prev) => shuffleArray([...prev]));
+      setQuartilesPinned(false);
+    } else {
+      // Re-pin: pull discovered quartile tiles to the top rows in canonical
+      // seed order; leave the remaining tiles below in their current order.
+      setTileOrder((prev) => {
+        const discoveredSeedIndices = [...foundQuartiles].sort((a, b) => a - b);
+        const pinnedIds = new Set(
+          discoveredSeedIndices.flatMap((si) => puzzle.seedTiles[si].map((t) => t.id))
+        );
+        const pinnedTiles = discoveredSeedIndices.flatMap((si) => puzzle.seedTiles[si]);
+        const freeTiles = prev.filter((t) => !pinnedIds.has(t.id));
+        return [...pinnedTiles, ...freeTiles];
+      });
+      setQuartilesPinned(true);
+    }
+  }, [puzzle, quartilesPinned, foundQuartiles]);
 
   // Share card
   const puzzleUrl = puzzleNumber != null
@@ -957,8 +1011,7 @@ export default function PlayGame({
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          height: "100dvh",
-          overflow: "hidden",
+          minHeight: "100dvh",
           padding: "12px",
           gap: "8px",
           boxSizing: "border-box",
@@ -1080,9 +1133,12 @@ export default function PlayGame({
             onShuffle={handleShuffle}
             onSubmit={handleSubmit}
             onClear={() => setSelectedIds([])}
+            onToggleLock={handleToggleLock}
             canSubmit={selectedIds.length >= 1 && !!wordSet}
             shaking={shaking}
             selectedCount={selectedTiles.length}
+            isLocked={quartilesPinned}
+            hasDiscoveredQuartiles={foundQuartiles.size > 0}
           />
         </div>
 
@@ -1094,12 +1150,7 @@ export default function PlayGame({
         */}
         <div
           style={{
-            flex: 1,
-            minHeight: 0,
-            minWidth: 0,
             width: "100%",
-            overflowY: "auto",
-            overflowX: "hidden",
             display: "flex",
             flexDirection: "column",
             gap: "6px",
