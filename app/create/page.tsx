@@ -581,17 +581,6 @@ export default function CreatePage() {
     );
   }, [wordSet, seeds.map((s) => s.clean).join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset arrange order to natural (seed-by-seed) order whenever tiles change
-  useEffect(() => {
-    if (allSeedsReady) {
-      setArrangeOrder(
-        seeds.flatMap((s, si) => s.tiles.map((_, ti) => `s${si}-t${ti}`))
-      );
-    } else {
-      setArrangeOrder([]);
-    }
-  }, [allSeedsReady, seeds.map((s) => s.tiles.join("|")).join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Handle word input changes
   const handleWordChange = useCallback((idx: number, value: string) => {
     setSeeds((prev) => {
@@ -628,6 +617,19 @@ export default function CreatePage() {
   const allSeedsReady = seeds.every(
     (s) => s.clean.length >= 8 && s.error === null && s.tiles.length === TILES_PER_SEED
   );
+
+  // Reset arrange order to the natural (seed-by-seed) order whenever the tile
+  // splits change. Placed AFTER allSeedsReady so the dependency array resolves
+  // without hitting a temporal dead zone.
+  useEffect(() => {
+    if (allSeedsReady) {
+      setArrangeOrder(
+        seeds.flatMap((s, si) => s.tiles.map((_, ti) => `s${si}-t${ti}`))
+      );
+    } else {
+      setArrangeOrder([]);
+    }
+  }, [allSeedsReady, seeds.map((s) => s.tiles.join("|")).join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Run full validation
   const handleValidate = useCallback(async () => {
