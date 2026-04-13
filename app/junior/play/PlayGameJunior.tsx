@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   decodeJuniorPuzzle,
@@ -143,14 +143,30 @@ function TileCell({
   seedIndex3Tile,
   shake,
   onClick,
+  ref,
 }: {
   tile: Tile;
   isSelected: boolean;
   seedIndex3Tile: number | null;
   shake: boolean;
   onClick: () => void;
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
   const isLocked = seedIndex3Tile !== null;
+
+  // Play a quick upward jump when the tile is freshly selected.
+  // Uses translateY only — scale transforms break mobile grid row recalculation.
+  const prevSelectedRef = useRef(false);
+  const [playJump, setPlayJump] = useState(false);
+  useEffect(() => {
+    if (isSelected && !prevSelectedRef.current) {
+      setPlayJump(true);
+      const t = setTimeout(() => setPlayJump(false), 300);
+      prevSelectedRef.current = true;
+      return () => clearTimeout(t);
+    }
+    if (!isSelected) prevSelectedRef.current = false;
+  }, [isSelected]);
   const qColor = isLocked ? SEED_COLORS[seedIndex3Tile] : null;
 
   let borderCls: string;
@@ -182,9 +198,11 @@ function TileCell({
 
   return (
     <button
+      ref={ref}
       onClick={onClick}
       aria-pressed={isSelected}
       aria-label={`Tile ${tile.letters}`}
+      style={{ zIndex: playJump ? 10 : undefined }}
       className={`
         relative w-full h-full flex items-center justify-center
         border-2 rounded-2xl
@@ -193,6 +211,7 @@ function TileCell({
         transition-all duration-150 select-none
         ${borderCls} ${bgCls} ${textCls} ${shadowCls}
         ${shake ? "animate-shake" : ""}
+        ${playJump ? "animate-tile-jump" : ""}
       `}
     >
       {tile.letters}
@@ -240,6 +259,7 @@ function StagingChips({
                 transition-colors duration-150 select-none
                 hover:bg-sky-100 active:opacity-80
                 shadow-[0_0_12px_rgba(56,189,248,0.25)]
+                animate-chip-pop
                 ${shaking ? "animate-shake" : ""}
               `}
             >
@@ -591,7 +611,11 @@ export default function PlayGameJunior({
   const [showCompletion, setShowCompletion] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastCounterRef = useRef(0);
-  const completionTriggeredRef = useRef(false); // prevents re-opening modal after "Keep Playing"
+  const completionTriggeredRef = useRef(false);
+  // Tile DOM element refs — keyed by tile.id, used for FLIP shuffle animations
+  const tileRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  // Tile positions captured just before a shuffle; consumed by useLayoutEffect
+  const pendingFlip = useRef<Map<string, DOMRect> | null>(null); // prevents re-opening modal after "Keep Playing"
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
 
@@ -808,8 +832,43 @@ export default function PlayGameJunior({
     return () => clearInterval(interval);
   }, [timerRunning, tabVisible]);
 
+  // FLIP animation — runs after tileOrder changes caused by shuffle.
+  // Reads old positions from pendingFlip, measures new positions, then applies
+  // inverted transforms and animates them back to zero with a spring bounce.
+  useLayoutEffect(() => {
+    const oldPositions = pendingFlip.current;
+    if (!oldPositions) return;
+    pendingFlip.current = null;
+
+    tileRefs.current.forEach((el, id) => {
+      const oldPos = oldPositions.get(id);
+      if (!oldPos) return;
+      const newPos = el.getBoundingClientRect();
+      const dx = oldPos.left - newPos.left;
+      const dy = oldPos.top - newPos.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+      // INVERT: snap tile to its old visual position before paint
+      el.style.transition = "none";
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+
+      // PLAY: one rAF later, release with a spring so the tile flies home
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.style.transition = "transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+          el.style.transform = "";
+        });
+      });
+    });
+  }, [tileOrder]);
+
   // Shuffle (free tiles only)
   const handleShuffle = useCallback(() => {
+    // Capture positions before the state update so FLIP knows where tiles were
+    const positions = new Map<string, DOMRect>();
+    tileRefs.current.forEach((el, id) => positions.set(id, el.getBoundingClientRect()));
+    pendingFlip.current = positions;
+
     setTileOrder((prev) => {
       const lockCount = found3Tiles.size * 3;
       return [
@@ -970,6 +1029,10 @@ export default function PlayGameJunior({
             {tileOrder.map((tile) => (
               <TileCell
                 key={tile.id}
+                ref={(el) => {
+                  if (el) tileRefs.current.set(tile.id, el);
+                  else tileRefs.current.delete(tile.id);
+                }}
                 tile={tile}
                 isSelected={selectedIds.includes(tile.id)}
                 seedIndex3Tile={found3Tiles.has(tile.seedIndex) ? tile.seedIndex : null}
