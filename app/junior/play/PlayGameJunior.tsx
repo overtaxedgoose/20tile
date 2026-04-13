@@ -792,6 +792,10 @@ export default function PlayGameJunior({
 
     if (result.is3Tile) {
       const seedIdx = selectedTiles[0].seedIndex;
+      // Capture positions so the FLIP animation plays when tiles lock to the top
+      const positions = new Map<string, DOMRect>();
+      tileRefs.current.forEach((el, id) => positions.set(id, el.getBoundingClientRect()));
+      pendingFlip.current = positions;
       setTileOrder((prev) => {
         const lockBoundary = found3Tiles.size * 3;
         const seedTiles = puzzle.seedTiles[seedIdx];

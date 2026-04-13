@@ -891,6 +891,10 @@ export default function PlayGame({
       // (React batches state updates), so foundQuartiles.size is the number
       // of rows already locked — exactly where the new row should go.
       const quartiledSeedIdx = selectedTiles[0].seedIndex;
+      // Capture positions so the FLIP animation plays when tiles lock to the top
+      const positions = new Map<string, DOMRect>();
+      tileRefs.current.forEach((el, id) => positions.set(id, el.getBoundingClientRect()));
+      pendingFlip.current = positions;
       setTileOrder((prev) => {
         const lockBoundary = foundQuartiles.size * 4;
         const seedTiles = puzzle.seedTiles[quartiledSeedIdx];
