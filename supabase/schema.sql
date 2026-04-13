@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS puzzles (
   -- tiles: raw "|" and "," format, e.g. "st|em|in|gs,re|ma|ck|ab,..."
   -- NOT url-encoded — encodeURIComponent is applied in app code when needed.
   tiles          text          NOT NULL,
+  -- tile_order: creator-defined starting arrangement, comma-separated tile IDs
+  -- e.g. "s0-t0,s2-t1,s1-t3,..." — NULL means shuffle randomly on play
+  tile_order     text,
   seed_words     text[]        NOT NULL,
   creator_name   text,
   status         puzzle_status NOT NULL    DEFAULT 'published',

@@ -612,10 +612,13 @@ export default function PlayGame({
   encodedPuzzle,
   puzzleId,
   puzzleNumber,
+  initialTileOrder,
 }: {
   encodedPuzzle: string | null;
   puzzleId?: string;
   puzzleNumber?: number;
+  /** Creator-defined starting order: comma-separated tile IDs, or null to shuffle. */
+  initialTileOrder?: string | null;
 }) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   // tileOrder holds all 20 tiles in their current display slots.
@@ -715,7 +718,19 @@ export default function PlayGame({
       }
     } catch { /* corrupted save — ignore */ }
 
-    if (!restored) setTileOrder(shuffleArray([...decoded.tiles]));
+    if (!restored) {
+      // Use the creator's defined starting order if provided and valid
+      if (initialTileOrder) {
+        const idToTile = Object.fromEntries(decoded.tiles.map((t) => [t.id, t]));
+        const ordered = initialTileOrder
+          .split(",")
+          .map((id) => idToTile[id])
+          .filter(Boolean) as typeof decoded.tiles;
+        setTileOrder(ordered.length === decoded.tiles.length ? ordered : shuffleArray([...decoded.tiles]));
+      } else {
+        setTileOrder(shuffleArray([...decoded.tiles]));
+      }
+    }
 
     loadWordSet()
       .then((ws) => {

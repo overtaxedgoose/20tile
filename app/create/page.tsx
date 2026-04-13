@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -261,6 +261,94 @@ function SeedRow({
   );
 }
 
+// ─── ArrangeTilesGrid ─────────────────────────────────────────────────────────
+// Native HTML5 drag-and-drop grid for setting the puzzle's starting tile order.
+// Renders all 20 tiles in a 4×5 grid; drag any tile onto another to reorder.
+
+function ArrangeTilesGrid({
+  tiles,
+  order,
+  onReorder,
+}: {
+  tiles: Tile[];
+  order: string[];
+  onReorder: (newOrder: string[]) => void;
+}) {
+  const draggedIdRef = useRef<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  const tileById = useMemo(
+    () => Object.fromEntries(tiles.map((t) => [t.id, t])),
+    [tiles]
+  );
+
+  const handleDragStart = (id: string) => {
+    draggedIdRef.current = id;
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    setDragOverId(id);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const draggedId = draggedIdRef.current;
+    if (!draggedId || draggedId === targetId) {
+      setDragOverId(null);
+      return;
+    }
+    const newOrder = [...order];
+    const fromIdx = newOrder.indexOf(draggedId);
+    newOrder.splice(fromIdx, 1);
+    const toIdx = newOrder.indexOf(targetId);
+    newOrder.splice(toIdx, 0, draggedId);
+    onReorder(newOrder);
+    setDragOverId(null);
+    draggedIdRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDragOverId(null);
+    draggedIdRef.current = null;
+  };
+
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {order.map((id) => {
+        const tile = tileById[id];
+        if (!tile) return null;
+        const color = SEED_COLORS[tile.seedIndex];
+        const isDragOver = dragOverId === id;
+        return (
+          <div
+            key={id}
+            draggable
+            onDragStart={() => handleDragStart(id)}
+            onDragOver={(e) => handleDragOver(e, id)}
+            onDrop={(e) => handleDrop(e, id)}
+            onDragEnd={handleDragEnd}
+            className={`
+              flex items-center justify-center
+              border rounded py-3 px-1
+              font-mono text-sm font-bold tracking-widest uppercase
+              cursor-grab active:cursor-grabbing select-none
+              transition-all duration-100
+              ${color.bg} ${color.text}
+              ${isDragOver
+                ? "border-white/70 ring-1 ring-white/30 scale-105"
+                : color.border
+              }
+            `}
+          >
+            {tile.letters}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ValidationPanel({ result }: { result: ValidationState | null }) {
   if (!result) return null;
 
@@ -462,6 +550,11 @@ export default function CreatePage() {
   const [validating, setValidating] = useState(false);
   const validationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Arrange starting positions ───────────────────────────────────────────────
+  // Ordered array of tile IDs representing the creator's desired starting layout.
+  // Initialised / reset whenever the tile splits change.
+  const [arrangeOrder, setArrangeOrder] = useState<string[]>([]);
+
   // ── Publish flow state ───────────────────────────────────────────────────────
   const [publishStage, setPublishStage] = useState<PublishStage>("idle");
   const [puzzleTitle, setPuzzleTitle] = useState("");
@@ -487,6 +580,17 @@ export default function CreatePage() {
       }))
     );
   }, [wordSet, seeds.map((s) => s.clean).join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset arrange order to natural (seed-by-seed) order whenever tiles change
+  useEffect(() => {
+    if (allSeedsReady) {
+      setArrangeOrder(
+        seeds.flatMap((s, si) => s.tiles.map((_, ti) => `s${si}-t${ti}`))
+      );
+    } else {
+      setArrangeOrder([]);
+    }
+  }, [allSeedsReady, seeds.map((s) => s.tiles.join("|")).join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle word input changes
   const handleWordChange = useCallback((idx: number, value: string) => {
@@ -671,10 +775,15 @@ export default function CreatePage() {
 
     try {
       const supabase = createClient();
+      // tile_order: use the creator's arrangement if it covers all 20 tiles
+      const tileOrderValue =
+        arrangeOrder.length === 20 ? arrangeOrder.join(",") : null;
+
       const { data, error } = await supabase
         .from("puzzles")
         .insert({
           tiles: rawTiles,
+          tile_order: tileOrderValue,
           seed_words: seeds.map((s) => s.clean),
           title: puzzleTitle.trim() || null,
           creator_name: creatorName.trim() || null,
@@ -830,6 +939,42 @@ export default function CreatePage() {
 
         {/* Validation result */}
         <ValidationPanel result={validation} />
+
+        {/* Arrange starting positions — shown when validation passes */}
+        {validation?.ok && arrangeOrder.length === 20 && (
+          <div className="space-y-3">
+            <div className="border-t" style={{ borderColor: "var(--border)" }} />
+            <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>
+              ARRANGE STARTING POSITIONS
+            </p>
+            <p className="text-xs" style={{ color: "var(--green-dark)" }}>
+              Drag tiles to set the order players will see when the puzzle loads.
+            </p>
+            <ArrangeTilesGrid
+              tiles={seeds.flatMap((s, si) =>
+                s.tiles.map((letters, ti) => ({
+                  id: `s${si}-t${ti}`,
+                  letters,
+                  seedIndex: si,
+                  tileIndex: ti,
+                }))
+              )}
+              order={arrangeOrder}
+              onReorder={setArrangeOrder}
+            />
+            <button
+              onClick={() =>
+                setArrangeOrder(
+                  seeds.flatMap((s, si) => s.tiles.map((_, ti) => `s${si}-t${ti}`))
+                )
+              }
+              className="w-full py-2 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
+              style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
+            >
+              [ RESET TO SEED ORDER ]
+            </button>
+          </div>
+        )}
 
         {/* Publish — only enabled once validation passes */}
         {publishStage === "idle" && (

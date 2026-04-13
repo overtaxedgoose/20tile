@@ -17,7 +17,8 @@ export interface WordReportRow {
 export interface PuzzleRow {
   id: string;
   number: number;
-  tiles: string;        // raw "|" and "," encoded string, NOT url-encoded
+  tiles: string;           // raw "|" and "," encoded string, NOT url-encoded
+  tile_order: string | null; // creator-defined starting order: comma-separated tile IDs, or null
   seed_words: string[];
   title: string | null;
   creator_name: string | null;
@@ -50,6 +51,7 @@ export interface Database {
         Insert: Omit<PuzzleRow, "id" | "number" | "play_count" | "avg_difficulty" | "avg_cleverness" | "rating_count" | "published_at"> & {
           id?: string;
           number?: number;
+          tile_order?: string | null;
           play_count?: number;
           avg_difficulty?: number | null;
           avg_cleverness?: number | null;
