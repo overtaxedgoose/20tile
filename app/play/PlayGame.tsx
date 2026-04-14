@@ -337,6 +337,62 @@ function WordsByLetterHint({ letterCounts }: { letterCounts: Record<string, numb
   );
 }
 
+// ─── WordsByTileCount ─────────────────────────────────────────────────────────
+// Collapsible breakdown of words found vs. possible, grouped by tile count.
+
+function WordsByTileCount({
+  discoveredWords,
+  totalByTileCount,
+}: {
+  discoveredWords: ValidatedWord[];
+  totalByTileCount: Record<number, number>;
+}) {
+  const foundByCount: Record<number, number> = {};
+  for (const w of discoveredWords) {
+    const c = w.tileIds.length;
+    foundByCount[c] = (foundByCount[c] ?? 0) + 1;
+  }
+
+  const rows = ([1, 2, 3, 4] as const).filter((c) => (totalByTileCount[c] ?? 0) > 0);
+
+  return (
+    <details style={{ width: "100%", minWidth: 0 }}>
+      <summary
+        className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1"
+        style={{ color: "var(--green-muted)" }}
+      >
+        <span style={{ fontSize: "10px" }}>▸</span>
+        WORDS BY TILE COUNT
+      </summary>
+      <div className="pt-2 pb-1">
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+          {rows.map((count) => {
+            const found = foundByCount[count] ?? 0;
+            const total = totalByTileCount[count] ?? 0;
+            const complete = found === total;
+            return (
+              <span key={count} className="font-mono text-xs inline-flex items-baseline gap-1.5">
+                <span style={{ color: "var(--green-dark)" }}>
+                  {count}-tile
+                </span>
+                <span
+                  className="font-bold tabular-nums"
+                  style={{ color: complete ? "var(--green)" : "var(--green-muted)" }}
+                >
+                  {found}/{total}
+                </span>
+                {complete && (
+                  <span style={{ color: "var(--green)", fontSize: "9px" }}>✓</span>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </details>
+  );
+}
+
 // ─── CollapsibleWordsDrawer ───────────────────────────────────────────────────
 // Collapsed by default; tap the summary to expand and see found words.
 
@@ -862,18 +918,27 @@ export default function PlayGame({
   // Derived: which seed groups have a found quartile
   const foundQuartiles = puzzle ? getFoundQuartiles(discoveredWords, puzzle) : new Set<number>();
 
-  // Derived: letter → count of all discoverable words (used by WordsByLetterHint)
-  // Runs once puzzle + wordSet are both available; result is stable.
-  const wordsByLetter = useMemo<Record<string, number> | null>(() => {
+  // Derived: letter → count and tileCount → count for all discoverable words.
+  // Both computed in one findAllValidWords pass; result is stable once loaded.
+  const wordAnalysis = useMemo<{
+    byLetter: Record<string, number>;
+    totalByTileCount: Record<number, number>;
+  } | null>(() => {
     if (!puzzle || !wordSet) return null;
     const allWords = findAllValidWords(puzzle, wordSet);
-    const counts: Record<string, number> = {};
-    for (const word of allWords.keys()) {
+    const byLetter: Record<string, number> = {};
+    const totalByTileCount: Record<number, number> = {};
+    for (const [word, paths] of allWords.entries()) {
       const letter = word[0].toUpperCase();
-      counts[letter] = (counts[letter] ?? 0) + 1;
+      byLetter[letter] = (byLetter[letter] ?? 0) + 1;
+      const tileCount = paths[0].length;
+      totalByTileCount[tileCount] = (totalByTileCount[tileCount] ?? 0) + 1;
     }
-    return counts;
+    return { byLetter, totalByTileCount };
   }, [puzzle, wordSet]);
+
+  const wordsByLetter = wordAnalysis?.byLetter ?? null;
+  const totalByTileCount = wordAnalysis?.totalByTileCount ?? null;
 
   // Auto-finish: show completion modal as soon as every discoverable word is found
   useEffect(() => {
@@ -1310,6 +1375,14 @@ export default function PlayGame({
           {/* Words by letter hint — unlocked after all 5 quartiles are found */}
           {foundQuartiles.size === 5 && wordsByLetter && (
             <WordsByLetterHint letterCounts={wordsByLetter} />
+          )}
+
+          {/* Words by tile count — visible once puzzle data is loaded */}
+          {totalByTileCount && (
+            <WordsByTileCount
+              discoveredWords={discoveredWords}
+              totalByTileCount={totalByTileCount}
+            />
           )}
 
           {/* Invalid guesses — own collapsible section, below words by letter */}
