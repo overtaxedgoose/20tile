@@ -340,7 +340,7 @@ function WordsByLetterHint({ letterCounts }: { letterCounts: Record<string, numb
 // ─── CollapsibleWordsDrawer ───────────────────────────────────────────────────
 // Collapsed by default; tap the summary to expand and see found words.
 
-function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWord[]; invalidGuesses: string[] }) {
+function CollapsibleWordsDrawer({ words }: { words: ValidatedWord[] }) {
   const sorted = [...words].sort((a, b) => a.word.localeCompare(b.word));
   return (
     <details style={{ width: "100%", minWidth: 0 }}>
@@ -351,7 +351,7 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
         <span style={{ fontSize: "10px" }}>▸</span>
         WORDS FOUND ({words.length})
       </summary>
-      <div className="pt-2 pb-1 space-y-2">
+      <div className="pt-2 pb-1">
         {sorted.length === 0 ? (
           <p className="text-xs" style={{ color: "var(--green-dark)" }}>No words found yet.</p>
         ) : (
@@ -370,24 +370,35 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
             ))}
           </div>
         )}
-        {invalidGuesses.length > 0 && (
-          <div className="pt-1">
-            <p className="text-xs mb-1" style={{ color: "var(--green-dark)" }}>
-              {invalidGuesses.length} invalid guess{invalidGuesses.length !== 1 ? "es" : ""}
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {[...new Set(invalidGuesses)].map((g, i) => (
-                <span
-                  key={i}
-                  className="text-xs font-mono uppercase px-1.5 py-0.5 rounded"
-                  style={{ color: "var(--green-dark)", border: "1px solid var(--green-dark)" }}
-                >
-                  {g}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+      </div>
+    </details>
+  );
+}
+
+function CollapsibleInvalidGuessesDrawer({ invalidGuesses }: { invalidGuesses: string[] }) {
+  if (invalidGuesses.length === 0) return null;
+  const unique = [...new Set(invalidGuesses)];
+  return (
+    <details style={{ width: "100%", minWidth: 0 }}>
+      <summary
+        className="text-xs tracking-widest cursor-pointer select-none list-none flex items-center gap-1.5 py-1"
+        style={{ color: "var(--green-dark)" }}
+      >
+        <span style={{ fontSize: "10px" }}>▸</span>
+        INVALID GUESSES ({unique.length})
+      </summary>
+      <div className="pt-2 pb-1">
+        <div className="flex flex-wrap gap-1">
+          {unique.map((g, i) => (
+            <span
+              key={i}
+              className="text-xs font-mono uppercase px-1.5 py-0.5 rounded"
+              style={{ color: "var(--green-dark)", border: "1px solid var(--green-dark)" }}
+            >
+              {g}
+            </span>
+          ))}
+        </div>
       </div>
     </details>
   );
@@ -1294,12 +1305,15 @@ export default function PlayGame({
             gap: "6px",
           }}
         >
-          <CollapsibleWordsDrawer words={discoveredWords} invalidGuesses={invalidGuesses} />
+          <CollapsibleWordsDrawer words={discoveredWords} />
 
           {/* Words by letter hint — unlocked after all 5 quartiles are found */}
           {foundQuartiles.size === 5 && wordsByLetter && (
             <WordsByLetterHint letterCounts={wordsByLetter} />
           )}
+
+          {/* Invalid guesses — own collapsible section, below words by letter */}
+          <CollapsibleInvalidGuessesDrawer invalidGuesses={invalidGuesses} />
 
           {/* Reset — available any time after the first word is found */}
           {discoveredWords.length > 0 && !showCompletion && (

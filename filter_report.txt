@@ -1,0 +1,76 @@
+============================================================
+20TILE WORD LIST — FILTER REPORT
+============================================================
+SCOWL max grade : 80
+Max word length : 16
+Modern allowlist: 62 words
+
+Original count  : 178,689
+Final count     : 175,495
+Total removed   : 3,239  (1.8%)
+Allowlist added : 45 new words not in original
+
+LENGTH DISTRIBUTION:
+ Length    Original        Kept     Removed
+---------------------------------------------
+      2         101         101           0
+      3       1,015         939          76
+      4       4,030       3,986          44
+      5       8,938       8,858          80
+      6      15,787      15,641         146
+      7      24,028      23,829         199
+      8      29,766      29,516         250
+      9      29,150      27,936       1,214
+     10      22,326      21,588         738
+     11      16,165      15,862         303
+     12      11,417      11,310         107
+     13       7,750       7,735          15
+     14       5,059       5,048          11
+     15       3,157       3,146          11
+
+ALLOWLIST WORDS ADDED (not in original Scrabble dict):
+  ACAI
+  BIBIMBAP
+  BINGEWATCH
+  BLOCKCHAIN
+  BURRATA
+  CATFISHING
+  CISGENDER
+  CROWDFUND
+  CROWDFUNDING
+  CRYPTOCURRENCY
+  DEEPFAKE
+  DEEPFAKES
+  EMOJI
+  EMOJIS
+  GENDERQUEER
+  GHOSTERS
+  GLAMPING
+  HALLOUMI
+  HASHTAG
+  HASHTAGS
+  KOMBUCHA
+  LIVESTREAM
+  LIVESTREAMING
+  LIVESTREAMS
+  MATCHA
+  PODCAST
+  PODCASTS
+  RETWEET
+  RETWEETED
+  RETWEETS
+  RIDESHARE
+  SELFIE
+  SELFIES
+  SHAKSHUKA
+  SRIRACHA
+  STAYCATION
+  STAYCATIONS
+  UBER
+  UNFOLLOW
+  UNFRIEND
+  VLOG
+  VLOGGER
+  VLOGGERS
+  VLOGS
+  WIFI
