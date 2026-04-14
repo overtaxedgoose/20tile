@@ -279,33 +279,31 @@ function ActionBar({
   onShuffle,
   onSubmit,
   onClear,
+  onToggleLock,
   canSubmit,
   shaking,
   selectedCount,
+  isLocked,
+  hasDiscoveredSeeds,
 }: {
   onShuffle: () => void;
   onSubmit: () => void;
   onClear: () => void;
+  onToggleLock: () => void;
   canSubmit: boolean;
   shaking: boolean;
   selectedCount: number;
+  isLocked: boolean;
+  hasDiscoveredSeeds: boolean;
 }) {
   return (
-    <div style={{ flexShrink: 0, display: "flex", gap: "8px", alignItems: "stretch" }}>
-      <button
-        onClick={onShuffle}
-        className="flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all hover:bg-slate-50 text-slate-600"
-        style={{ width: "48px", height: "44px", fontSize: "18px" }}
-        aria-label="Shuffle tiles"
-      >
-        ⟳
-      </button>
-
+    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Row 1 — Submit */}
       <button
         onClick={onSubmit}
         disabled={!canSubmit}
         className={`
-          flex-1 border-2 text-sm font-mono font-bold tracking-widest uppercase rounded-xl
+          w-full border-2 text-sm font-mono font-bold tracking-widest uppercase rounded-xl
           transition-all
           ${canSubmit
             ? "border-sky-400 bg-sky-50 text-sky-700 hover:bg-sky-100 cursor-pointer"
@@ -318,15 +316,44 @@ function ActionBar({
         ✓ SUBMIT{selectedCount > 0 ? ` (${selectedCount})` : ""}
       </button>
 
-      <button
-        onClick={onClear}
-        disabled={selectedCount === 0}
-        className="flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 text-slate-600"
-        style={{ width: "48px", height: "44px", fontSize: "16px" }}
-        aria-label="Clear selection"
-      >
-        ✕
-      </button>
+      {/* Row 2 — Shuffle | Lock | Clear */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button
+          onClick={onShuffle}
+          className="flex-1 flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all hover:bg-slate-50 text-slate-600"
+          style={{ height: "44px", fontSize: "18px" }}
+          aria-label="Shuffle tiles"
+        >
+          ⟳
+        </button>
+
+        {/* Lock / Unlock toggle */}
+        <button
+          onClick={onToggleLock}
+          disabled={!hasDiscoveredSeeds}
+          className="flex-1 flex items-center justify-center border-2 rounded-xl transition-all disabled:opacity-25 disabled:cursor-not-allowed"
+          style={{
+            height: "44px",
+            fontSize: "18px",
+            borderColor: hasDiscoveredSeeds && !isLocked ? "#38bdf8" : "#e2e8f0",
+            background: hasDiscoveredSeeds && !isLocked ? "#f0f9ff" : "#ffffff",
+            color: hasDiscoveredSeeds && !isLocked ? "#0369a1" : "#94a3b8",
+          }}
+          aria-label={isLocked ? "Unlock discovered seed words" : "Lock discovered seed words"}
+        >
+          {isLocked ? "🔒" : "🔓"}
+        </button>
+
+        <button
+          onClick={onClear}
+          disabled={selectedCount === 0}
+          className="flex-1 flex items-center justify-center border-2 border-slate-200 bg-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 text-slate-600"
+          style={{ height: "44px", fontSize: "16px" }}
+          aria-label="Clear selection"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }
@@ -623,6 +650,9 @@ export default function PlayGameJunior({
   const pendingFlip = useRef<Map<string, DOMRect> | null>(null); // prevents re-opening modal after "Keep Playing"
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  // true = discovered seed tiles pinned to top rows (default)
+  // false = all tiles move freely together
+  const [seedsPinned, setSeedsPinned] = useState(true);
 
   const addToast = useCallback((message: string, type: Toast["type"], duration = 1800) => {
     const id = ++toastCounterRef.current;
@@ -871,7 +901,7 @@ export default function PlayGameJunior({
     });
   }, [tileOrder]);
 
-  // Shuffle (free tiles only)
+  // Shuffle — when pinned, only the free tail is reshuffled; when unpinned, all tiles.
   const handleShuffle = useCallback(() => {
     // Capture positions before the state update so FLIP knows where tiles were
     const positions = new Map<string, DOMRect>();
@@ -879,13 +909,43 @@ export default function PlayGameJunior({
     pendingFlip.current = positions;
 
     setTileOrder((prev) => {
+      if (!seedsPinned) return shuffleArray([...prev]);
       const lockCount = found3Tiles.size * 3;
       return [
         ...prev.slice(0, lockCount),
         ...shuffleArray([...prev.slice(lockCount)]),
       ];
     });
-  }, [found3Tiles]);
+  }, [found3Tiles, seedsPinned]);
+
+  // Toggle lock — pins or unpins discovered seed tiles.
+  const handleToggleLock = useCallback(() => {
+    if (!puzzle) return;
+
+    // Capture positions for FLIP animation
+    const positions = new Map<string, DOMRect>();
+    tileRefs.current.forEach((el, id) => positions.set(id, el.getBoundingClientRect()));
+    pendingFlip.current = positions;
+
+    if (seedsPinned) {
+      // Unpin: release all tiles into a single shuffled pool.
+      setTileOrder((prev) => shuffleArray([...prev]));
+      setSeedsPinned(false);
+    } else {
+      // Re-pin: pull discovered seed tiles to the top rows in canonical seed
+      // order; leave the remaining tiles below in their current order.
+      setTileOrder((prev) => {
+        const discoveredSeedIndices = [...found3Tiles].sort((a, b) => a - b);
+        const pinnedIds = new Set(
+          discoveredSeedIndices.flatMap((si) => puzzle.seedTiles[si].map((t) => t.id))
+        );
+        const pinnedTiles = discoveredSeedIndices.flatMap((si) => puzzle.seedTiles[si]);
+        const freeTiles = prev.filter((t) => !pinnedIds.has(t.id));
+        return [...pinnedTiles, ...freeTiles];
+      });
+      setSeedsPinned(true);
+    }
+  }, [puzzle, seedsPinned, found3Tiles]);
 
   // ── Render guards ────────────────────────────────────────────────────────────
 
@@ -1057,9 +1117,12 @@ export default function PlayGameJunior({
             onShuffle={handleShuffle}
             onSubmit={handleSubmit}
             onClear={() => setSelectedIds([])}
+            onToggleLock={handleToggleLock}
             canSubmit={selectedIds.length >= 1 && !!wordSet}
             shaking={shaking}
             selectedCount={selectedTiles.length}
+            isLocked={seedsPinned}
+            hasDiscoveredSeeds={found3Tiles.size > 0}
           />
         </div>
 
