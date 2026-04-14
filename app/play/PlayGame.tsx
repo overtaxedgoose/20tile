@@ -660,12 +660,14 @@ export default function PlayGame({
   puzzleId,
   puzzleNumber,
   initialTileOrder,
+  creatorName,
 }: {
   encodedPuzzle: string | null;
   puzzleId?: string;
   puzzleNumber?: number;
   /** Creator-defined starting order: comma-separated tile IDs, or null to shuffle. */
   initialTileOrder?: string | null;
+  creatorName?: string;
 }) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   // tileOrder holds all 20 tiles in their current display slots.
@@ -1019,7 +1021,7 @@ export default function PlayGame({
   const puzzleUrl = puzzleNumber != null
     ? `20tile.app/play/${puzzleNumber}`
     : typeof window !== "undefined" ? window.location.href : "20tile.app";
-  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl, puzzleStats ?? undefined, elapsedSeconds) : "";
+  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl, puzzleStats ?? undefined, elapsedSeconds, creatorName) : "";
 
   // ── Render guards ────────────────────────────────────────────────────────────
 

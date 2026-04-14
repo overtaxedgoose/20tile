@@ -442,7 +442,8 @@ export function generateShareCard(
   score: number,
   puzzleUrl?: string,
   puzzleStats?: { totalWords: number; maxScore: number },
-  elapsedSeconds?: number
+  elapsedSeconds?: number,
+  creatorName?: string
 ): string {
   const quartileEmojis = ["🟩", "🟦", "🟨", "🟧", "🟥"];
   const foundQuartiles = getFoundQuartiles(discoveredWords, puzzle);
@@ -454,6 +455,7 @@ export function generateShareCard(
   const lines: string[] = [
     "20TILE",
     scoreStr,
+    ...(creatorName ? [`by ${creatorName}`] : []),
     "",
     foundQuartiles.size === 5 ? "🏆 All quartiles found!" : `${foundQuartiles.size}/5 quartiles`,
     "",

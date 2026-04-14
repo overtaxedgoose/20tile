@@ -415,6 +415,7 @@ function CompletionModal({
   elapsedSeconds,
   puzzleNumber,
   puzzleId,
+  creatorName,
   onDismiss,
   onKeepPlaying,
 }: {
@@ -425,6 +426,7 @@ function CompletionModal({
   elapsedSeconds: number;
   puzzleNumber?: number;
   puzzleId?: string;
+  creatorName?: string;
   onDismiss: () => void;
   onKeepPlaying: () => void;
 }) {
@@ -460,6 +462,7 @@ function CompletionModal({
     `📝 ${words.length} words${allWordsFound ? " — ALL of them! 🏆" : ""}`,
     `🌟 3tiles: ${found3TileCount}/${total3TileWords}`,
     `⏱️ ${formatElapsedTime(elapsedSeconds)}`,
+    ...(creatorName ? [`✏️ by ${creatorName}`] : []),
     "",
     puzzleUrl,
   ].join("\n");
@@ -592,10 +595,12 @@ export default function PlayGameJunior({
   encodedPuzzle,
   puzzleId,
   puzzleNumber,
+  creatorName,
 }: {
   encodedPuzzle: string | null;
   puzzleId?: string;
   puzzleNumber?: number;
+  creatorName?: string;
 }) {
   const [puzzle, setPuzzle] = useState<JuniorPuzzle | null>(null);
   const [tileOrder, setTileOrder] = useState<Tile[]>([]);
@@ -922,6 +927,7 @@ export default function PlayGameJunior({
           elapsedSeconds={elapsedSeconds}
           puzzleNumber={puzzleNumber}
           puzzleId={puzzleId}
+          creatorName={creatorName}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
           onKeepPlaying={() => setShowCompletion(false)}
         />

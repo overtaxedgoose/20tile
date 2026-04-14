@@ -21,7 +21,7 @@ export default async function JuniorPlayByNumberPage({ params }: PageProps) {
 
   const { data: puzzle, error } = await supabase
     .from("junior_puzzles")
-    .select("id, number, tiles, status")
+    .select("id, number, tiles, status, creator_name")
     .eq("number", puzzleNumber)
     .eq("status", "published")
     .single();
@@ -45,6 +45,7 @@ export default async function JuniorPlayByNumberPage({ params }: PageProps) {
       encodedPuzzle={encodedPuzzle}
       puzzleId={puzzle.id}
       puzzleNumber={puzzle.number}
+      creatorName={puzzle.creator_name ?? undefined}
     />
   );
 }

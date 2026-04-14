@@ -21,7 +21,7 @@ export default async function PlayByNumberPage({ params }: PageProps) {
 
   const { data: puzzle, error } = await supabase
     .from("puzzles")
-    .select("id, number, tiles, tile_order, status")
+    .select("id, number, tiles, tile_order, status, creator_name")
     .eq("number", puzzleNumber)
     .eq("status", "published")
     .single();
@@ -48,6 +48,7 @@ export default async function PlayByNumberPage({ params }: PageProps) {
       puzzleId={puzzle.id}
       puzzleNumber={puzzle.number}
       initialTileOrder={puzzle.tile_order ?? null}
+      creatorName={puzzle.creator_name ?? undefined}
     />
   );
 }
