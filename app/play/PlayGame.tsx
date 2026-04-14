@@ -393,6 +393,39 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
   );
 }
 
+// ─── Inline Reset Button ──────────────────────────────────────────────────────
+// Two-step confirm to prevent accidental resets during gameplay.
+
+function InlineResetButton({ onReset }: { onReset: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  return confirming ? (
+    <div className="flex gap-2" style={{ flexShrink: 0 }}>
+      <button
+        onClick={() => { setConfirming(false); onReset(); }}
+        className="flex-1 py-2 border text-xs font-mono tracking-widest uppercase rounded transition-colors hover:bg-red-950"
+        style={{ borderColor: "#7f1d1d", color: "#fca5a5" }}
+      >
+        ✓ YES, RESET
+      </button>
+      <button
+        onClick={() => setConfirming(false)}
+        className="flex-1 py-2 border text-xs font-mono tracking-widest uppercase rounded transition-colors hover:bg-green-950"
+        style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
+      >
+        ✕ CANCEL
+      </button>
+    </div>
+  ) : (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full py-1.5 border text-xs font-mono tracking-widest uppercase rounded transition-colors hover:bg-green-950"
+      style={{ borderColor: "var(--border)", color: "var(--green-dark)", flexShrink: 0 }}
+    >
+      ↺ RESET PUZZLE
+    </button>
+  );
+}
+
 // ─── Completion Modal ─────────────────────────────────────────────────────────
 
 const DIFFICULTY_OPTIONS = [
@@ -408,7 +441,7 @@ const CLEVERNESS_OPTIONS = [
 ] as const;
 
 function CompletionModal({
-  score, words, puzzle, shareCard, allWordsFound, puzzleId, puzzleNumber, elapsedSeconds, onDismiss,
+  score, words, puzzle, shareCard, allWordsFound, puzzleId, puzzleNumber, elapsedSeconds, onDismiss, onReset,
 }: {
   score: number;
   words: ValidatedWord[];
@@ -419,6 +452,7 @@ function CompletionModal({
   puzzleNumber?: number;
   elapsedSeconds?: number;
   onDismiss: () => void;
+  onReset?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -645,6 +679,17 @@ function CompletionModal({
               style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
             >
               KEEP PLAYING
+            </button>
+          )}
+
+          {/* Reset — always available */}
+          {onReset && (
+            <button
+              onClick={onReset}
+              className="w-full py-2 border text-xs font-mono tracking-widest uppercase rounded transition-all hover:bg-red-950"
+              style={{ borderColor: "var(--border)", color: "var(--green-dark)" }}
+            >
+              ↺ RESET PUZZLE
             </button>
           )}
         </div>
@@ -1017,6 +1062,24 @@ export default function PlayGame({
     }
   }, [puzzle, quartilesPinned, foundQuartiles]);
 
+  // Reset puzzle — wipes all progress and shuffles tiles fresh
+  const handleReset = useCallback(() => {
+    if (!puzzle) return;
+    clearProgress();
+    const positions = new Map<string, DOMRect>();
+    tileRefs.current.forEach((el, id) => positions.set(id, el.getBoundingClientRect()));
+    pendingFlip.current = positions;
+    setDiscoveredWords([]);
+    setScore(0);
+    setInvalidGuesses([]);
+    setSelectedIds([]);
+    setElapsedSeconds(0);
+    setTimerRunning(true);
+    setShowCompletion(false);
+    setQuartilesPinned(true);
+    setTileOrder(shuffleArray([...puzzle.tiles]));
+  }, [puzzle, clearProgress]);
+
   // Share card
   const puzzleUrl = puzzleNumber != null
     ? `20tile.app/play/${puzzleNumber}`
@@ -1065,6 +1128,7 @@ export default function PlayGame({
           puzzleNumber={puzzleNumber}
           elapsedSeconds={elapsedSeconds}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
+          onReset={handleReset}
         />
       )}
 
@@ -1235,6 +1299,11 @@ export default function PlayGame({
           {/* Words by letter hint — unlocked after all 5 quartiles are found */}
           {foundQuartiles.size === 5 && wordsByLetter && (
             <WordsByLetterHint letterCounts={wordsByLetter} />
+          )}
+
+          {/* Reset — available any time after the first word is found */}
+          {discoveredWords.length > 0 && !showCompletion && (
+            <InlineResetButton onReset={handleReset} />
           )}
 
           {/* Show once all 5 quartiles are found but game hasn't auto-finished */}

@@ -432,6 +432,36 @@ function CollapsibleWordsDrawer({ words, invalidGuesses }: { words: ValidatedWor
   );
 }
 
+// ─── Inline Reset Button (Junior) ─────────────────────────────────────────────
+
+function InlineResetButton({ onReset }: { onReset: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  return confirming ? (
+    <div className="flex gap-2" style={{ flexShrink: 0 }}>
+      <button
+        onClick={() => { setConfirming(false); onReset(); }}
+        className="flex-1 py-2 border-2 border-red-300 text-xs font-mono tracking-widest uppercase rounded-xl transition-colors hover:bg-red-50 text-red-500"
+      >
+        ✓ YES, RESET
+      </button>
+      <button
+        onClick={() => setConfirming(false)}
+        className="flex-1 py-2 border-2 border-slate-200 text-xs font-mono tracking-widest uppercase rounded-xl transition-colors hover:bg-slate-50 text-slate-500"
+      >
+        ✕ CANCEL
+      </button>
+    </div>
+  ) : (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full py-1.5 border-2 border-slate-100 text-xs font-mono tracking-widest uppercase rounded-xl transition-colors hover:bg-slate-50 text-slate-400"
+      style={{ flexShrink: 0 }}
+    >
+      ↺ RESET PUZZLE
+    </button>
+  );
+}
+
 // ─── Completion Modal ─────────────────────────────────────────────────────────
 
 function CompletionModal({
@@ -445,6 +475,7 @@ function CompletionModal({
   creatorName,
   onDismiss,
   onKeepPlaying,
+  onReset,
 }: {
   score: number;
   words: ValidatedWord[];
@@ -456,6 +487,7 @@ function CompletionModal({
   creatorName?: string;
   onDismiss: () => void;
   onKeepPlaying: () => void;
+  onReset?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [balloonCount, setBalloonCount] = useState(0);
@@ -610,6 +642,14 @@ function CompletionModal({
           >
             ← BACK TO JUNIOR
           </Link>
+          {onReset && (
+            <button
+              onClick={onReset}
+              className="w-full py-2 border-2 border-slate-100 text-xs font-mono tracking-widest uppercase rounded-xl transition-all hover:bg-red-50 text-slate-400"
+            >
+              ↺ RESET PUZZLE
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -947,6 +987,25 @@ export default function PlayGameJunior({
     }
   }, [puzzle, seedsPinned, found3Tiles]);
 
+  // Reset puzzle — wipes all progress and shuffles tiles fresh
+  const handleReset = useCallback(() => {
+    if (!puzzle) return;
+    clearProgress();
+    const positions = new Map<string, DOMRect>();
+    tileRefs.current.forEach((el, id) => positions.set(id, el.getBoundingClientRect()));
+    pendingFlip.current = positions;
+    completionTriggeredRef.current = false;
+    setDiscoveredWords([]);
+    setScore(0);
+    setInvalidGuesses([]);
+    setSelectedIds([]);
+    setElapsedSeconds(0);
+    setTimerRunning(true);
+    setShowCompletion(false);
+    setSeedsPinned(true);
+    setTileOrder(shuffleArray([...puzzle.tiles]));
+  }, [puzzle, clearProgress]);
+
   // ── Render guards ────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -990,6 +1049,7 @@ export default function PlayGameJunior({
           creatorName={creatorName}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
           onKeepPlaying={() => setShowCompletion(false)}
+          onReset={handleReset}
         />
       )}
 
@@ -1161,6 +1221,11 @@ export default function PlayGameJunior({
                 </div>
               </div>
             </details>
+          )}
+
+          {/* Reset — available any time after the first word is found */}
+          {discoveredWords.length > 0 && !showCompletion && (
+            <InlineResetButton onReset={handleReset} />
           )}
 
           {/* Finish / See Results button:
