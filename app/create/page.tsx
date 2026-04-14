@@ -9,6 +9,7 @@ import {
   encodePuzzle,
   loadWordSet,
   scoreForTileCount,
+  shuffleArray,
   type Puzzle,
   type Tile,
 } from "@/lib/word-engine";
@@ -964,17 +965,26 @@ export default function CreatePage() {
               order={arrangeOrder}
               onReorder={setArrangeOrder}
             />
-            <button
-              onClick={() =>
-                setArrangeOrder(
-                  seeds.flatMap((s, si) => s.tiles.map((_, ti) => `s${si}-t${ti}`))
-                )
-              }
-              className="w-full py-2 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
-              style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
-            >
-              [ RESET TO SEED ORDER ]
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setArrangeOrder(shuffleArray([...arrangeOrder]))}
+                className="flex-1 py-2 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
+                style={{ borderColor: "var(--green)", color: "var(--green)" }}
+              >
+                [ SHUFFLE ]
+              </button>
+              <button
+                onClick={() =>
+                  setArrangeOrder(
+                    seeds.flatMap((s, si) => s.tiles.map((_, ti) => `s${si}-t${ti}`))
+                  )
+                }
+                className="flex-1 py-2 border text-xs tracking-widest uppercase font-mono transition-all rounded hover:bg-green-950"
+                style={{ borderColor: "var(--border)", color: "var(--green-muted)" }}
+              >
+                [ RESET ]
+              </button>
+            </div>
           </div>
         )}
 
