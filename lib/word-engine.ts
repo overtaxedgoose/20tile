@@ -443,7 +443,9 @@ export function generateShareCard(
   puzzleUrl?: string,
   puzzleStats?: { totalWords: number; maxScore: number },
   elapsedSeconds?: number,
-  creatorName?: string
+  creatorName?: string,
+  title?: string,
+  puzzleNumber?: number
 ): string {
   const quartileEmojis = ["🟩", "🟦", "🟨", "🟧", "🟥"];
   const foundQuartiles = getFoundQuartiles(discoveredWords, puzzle);
@@ -452,8 +454,13 @@ export function generateShareCard(
     ? `Score: ${score}/${puzzleStats.maxScore} pts`
     : `Score: ${score} pts`;
 
+  // Use creator's title when set, else "Puzzle #N" when this is a numbered DB
+  // puzzle. URL-only puzzles with no title contribute no line.
+  const titleLine = title || (puzzleNumber != null ? `Puzzle #${puzzleNumber}` : null);
+
   const lines: string[] = [
     "20TILE",
+    ...(titleLine ? [titleLine] : []),
     scoreStr,
     ...(creatorName ? [`by ${creatorName}`] : []),
     "",

@@ -481,6 +481,7 @@ function CompletionModal({
   puzzleNumber,
   puzzleId,
   creatorName,
+  title,
   onDismiss,
   onKeepPlaying,
   onReset,
@@ -493,6 +494,7 @@ function CompletionModal({
   puzzleNumber?: number;
   puzzleId?: string;
   creatorName?: string;
+  title?: string;
   onDismiss: () => void;
   onKeepPlaying: () => void;
   onReset?: () => void;
@@ -522,8 +524,12 @@ function CompletionModal({
     ? `20tile.app/junior/play/${puzzleNumber}`
     : "20tile.app/junior";
 
+  // Use the creator's title when set, else "Puzzle #N" for numbered puzzles.
+  const titleLine = title || (puzzleNumber != null ? `Puzzle #${puzzleNumber}` : null);
+
   const shareText = [
     "🟦🟨🟩 20TILE JR 🟩🟨🟦",
+    ...(titleLine ? [titleLine] : []),
     "",
     puzzleStats ? `⭐ ${score}/${puzzleStats.maxScore} pts` : `⭐ ${score} pts`,
     `📝 ${words.length} words${allWordsFound ? " — ALL of them! 🏆" : ""}`,
@@ -555,6 +561,15 @@ function CompletionModal({
           <h2 className="text-xl font-bold tracking-widest font-mono text-sky-700">
             ALL WORDS FOUND!
           </h2>
+          {titleLine && (
+            <p
+              className="text-sm font-mono font-bold tracking-widest uppercase truncate"
+              style={{ color: title ? "#0369a1" : "#64748b" }}
+              title={titleLine}
+            >
+              {titleLine}
+            </p>
+          )}
           <p className="text-xs tracking-widest text-slate-700">
             {found3TileCount}/{total3TileWords} 3tiles · {words.length} words found
           </p>
@@ -671,11 +686,14 @@ export default function PlayGameJunior({
   puzzleId,
   puzzleNumber,
   creatorName,
+  title,
 }: {
   encodedPuzzle: string | null;
   puzzleId?: string;
   puzzleNumber?: number;
   creatorName?: string;
+  /** Creator-defined puzzle title. Falls back to "Puzzle #N" when null but a number is set. */
+  title?: string;
 }) {
   const [puzzle, setPuzzle] = useState<JuniorPuzzle | null>(null);
   const [tileOrder, setTileOrder] = useState<Tile[]>([]);
@@ -1055,6 +1073,7 @@ export default function PlayGameJunior({
           puzzleNumber={puzzleNumber}
           puzzleId={puzzleId}
           creatorName={creatorName}
+          title={title}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
           onKeepPlaying={() => setShowCompletion(false)}
           onReset={handleReset}
@@ -1119,6 +1138,24 @@ export default function PlayGameJunior({
               ))}
             </div>
           </header>
+
+          {/* Puzzle title — creator-defined title, with "Puzzle #N" fallback for
+              numbered DB puzzles. URL-only Junior puzzles render no row. */}
+          {(title || puzzleNumber != null) && (
+            <div
+              className="text-center font-mono tracking-widest uppercase truncate"
+              style={{
+                flexShrink: 0,
+                color: title ? "#0369a1" : "#64748b",
+                fontSize: "13px",
+                letterSpacing: "0.15em",
+                fontWeight: title ? 700 : 500,
+              }}
+              title={title || `Puzzle #${puzzleNumber}`}
+            >
+              {title || `Puzzle #${puzzleNumber}`}
+            </div>
+          )}
 
           {/* Score bar */}
           {puzzleStats && puzzleStats.maxScore > 0 && (

@@ -508,7 +508,7 @@ const CLEVERNESS_OPTIONS = [
 ] as const;
 
 function CompletionModal({
-  score, words, puzzle, shareCard, allWordsFound, puzzleId, puzzleNumber, elapsedSeconds, onDismiss, onReset,
+  score, words, puzzle, shareCard, allWordsFound, puzzleId, puzzleNumber, elapsedSeconds, title, onDismiss, onReset,
 }: {
   score: number;
   words: ValidatedWord[];
@@ -518,6 +518,7 @@ function CompletionModal({
   puzzleId?: string;
   puzzleNumber?: number;
   elapsedSeconds?: number;
+  title?: string;
   onDismiss: () => void;
   onReset?: () => void;
 }) {
@@ -581,6 +582,15 @@ function CompletionModal({
           <h2 className="text-xl font-bold tracking-widest text-glow font-mono" style={{ color: "var(--green)" }}>
             {allWordsFound ? "PUZZLE COMPLETE" : quartileWords.length === 5 ? "PUZZLE COMPLETE" : "GAME OVER"}
           </h2>
+          {(title || puzzleNumber != null) && (
+            <p
+              className="text-sm font-mono font-bold tracking-widest uppercase truncate"
+              style={{ color: title ? "var(--green-dim)" : "var(--green-dark)" }}
+              title={title || `Puzzle #${puzzleNumber}`}
+            >
+              {title || `Puzzle #${puzzleNumber}`}
+            </p>
+          )}
           <p className="text-xs tracking-widest" style={{ color: "var(--green-muted)" }}>
             {quartileWords.length}/5 quartiles · {words.length} words found
           </p>
@@ -773,6 +783,7 @@ export default function PlayGame({
   puzzleNumber,
   initialTileOrder,
   creatorName,
+  title,
 }: {
   encodedPuzzle: string | null;
   puzzleId?: string;
@@ -780,6 +791,8 @@ export default function PlayGame({
   /** Creator-defined starting order: comma-separated tile IDs, or null to shuffle. */
   initialTileOrder?: string | null;
   creatorName?: string;
+  /** Creator-defined puzzle title. Falls back to "Puzzle #N" when null but a number is set. */
+  title?: string;
 }) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   // tileOrder holds all 20 tiles in their current display slots.
@@ -1160,7 +1173,7 @@ export default function PlayGame({
   const puzzleUrl = puzzleNumber != null
     ? `20tile.app/play/${puzzleNumber}`
     : typeof window !== "undefined" ? window.location.href : "20tile.app";
-  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl, puzzleStats ?? undefined, elapsedSeconds, creatorName) : "";
+  const shareCard = puzzle ? generateShareCard(discoveredWords, puzzle, score, puzzleUrl, puzzleStats ?? undefined, elapsedSeconds, creatorName, title, puzzleNumber) : "";
 
   // ── Render guards ────────────────────────────────────────────────────────────
 
@@ -1203,6 +1216,7 @@ export default function PlayGame({
           puzzleId={puzzleId}
           puzzleNumber={puzzleNumber}
           elapsedSeconds={elapsedSeconds}
+          title={title}
           onDismiss={() => { clearProgress(); setShowCompletion(false); }}
           onReset={handleReset}
         />
@@ -1303,6 +1317,25 @@ export default function PlayGame({
               ))}
             </div>
           </header>
+
+          {/* ── Puzzle title ─────────────────────────────────────────────
+              Shows the creator's title when set; otherwise falls back to
+              "Puzzle #N" for numbered (DB-backed) puzzles. URL-only puzzles
+              with no title render nothing here. */}
+          {(title || puzzleNumber != null) && (
+            <div
+              className="text-center font-mono tracking-widest uppercase truncate"
+              style={{
+                flexShrink: 0,
+                color: title ? "var(--green-dim)" : "var(--green-dark)",
+                fontSize: "13px",
+                letterSpacing: "0.15em",
+              }}
+              title={title || `Puzzle #${puzzleNumber}`}
+            >
+              {title || `Puzzle #${puzzleNumber}`}
+            </div>
+          )}
 
           {/* ── Staging chips ────────────────────────────────────────────── */}
           <StagingChips
