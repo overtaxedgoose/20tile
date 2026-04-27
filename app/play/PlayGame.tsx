@@ -584,8 +584,11 @@ function CompletionModal({
           </h2>
           {(title || puzzleNumber != null) && (
             <p
-              className="text-sm font-mono font-bold tracking-widest uppercase truncate"
-              style={{ color: title ? "var(--green-dim)" : "var(--green-dark)" }}
+              className={`text-sm font-mono font-bold tracking-widest uppercase truncate ${title ? "text-glow" : ""}`}
+              style={{
+                color: title ? "var(--green)" : "var(--green-muted)",
+                opacity: title ? 1 : 0.75,
+              }}
               title={title || `Puzzle #${puzzleNumber}`}
             >
               {title || `Puzzle #${puzzleNumber}`}
@@ -1321,15 +1324,17 @@ export default function PlayGame({
           {/* ── Puzzle title ─────────────────────────────────────────────
               Shows the creator's title when set; otherwise falls back to
               "Puzzle #N" for numbered (DB-backed) puzzles. URL-only puzzles
-              with no title render nothing here. */}
+              with no title render nothing here. Real titles get the bright
+              neon-green glow used by the score; the fallback is muted. */}
           {(title || puzzleNumber != null) && (
             <div
-              className="text-center font-mono tracking-widest uppercase truncate"
+              className={`text-center font-mono font-bold tracking-widest uppercase truncate ${title ? "text-glow" : ""}`}
               style={{
                 flexShrink: 0,
-                color: title ? "var(--green-dim)" : "var(--green-dark)",
-                fontSize: "13px",
-                letterSpacing: "0.15em",
+                color: title ? "var(--green)" : "var(--green-muted)",
+                fontSize: title ? "15px" : "12px",
+                letterSpacing: "0.18em",
+                opacity: title ? 1 : 0.75,
               }}
               title={title || `Puzzle #${puzzleNumber}`}
             >
