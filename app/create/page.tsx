@@ -265,6 +265,12 @@ function SeedRow({
 // ─── ArrangeTilesGrid ─────────────────────────────────────────────────────────
 // Native HTML5 drag-and-drop grid for setting the puzzle's starting tile order.
 // Renders all 20 tiles in a 4×5 grid; drag any tile onto another to reorder.
+//
+// HTML5 drag events don't fire on mobile touch devices, so the grid also
+// supports tap-to-move: tap a tile to "pick it up" (highlighted), then tap
+// another tile to insert it at that position. Tap the picked tile again to
+// drop it back unchanged. Both interaction styles share the same splice
+// semantics so behavior is consistent across input methods.
 
 function ArrangeTilesGrid({
   tiles,
@@ -276,15 +282,47 @@ function ArrangeTilesGrid({
   onReorder: (newOrder: string[]) => void;
 }) {
   const draggedIdRef = useRef<string | null>(null);
+  // Some browsers fire a click event immediately after a successful drag;
+  // this flag lets the click handler ignore that synthesized click.
+  const justDraggedRef = useRef(false);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  // Tap-to-move state: the tile that's currently "picked up" awaiting a target
+  const [pickedId, setPickedId] = useState<string | null>(null);
 
   const tileById = useMemo(
     () => Object.fromEntries(tiles.map((t) => [t.id, t])),
     [tiles]
   );
 
+  // Shared move logic — splice fromId out, then splice it back in at the
+  // current position of toId. Identical to what the drag-drop handler did.
+  const moveTile = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const newOrder = [...order];
+    const fromIdx = newOrder.indexOf(fromId);
+    newOrder.splice(fromIdx, 1);
+    const toIdx = newOrder.indexOf(toId);
+    newOrder.splice(toIdx, 0, fromId);
+    onReorder(newOrder);
+  };
+
+  const handleClick = (id: string) => {
+    // Ignore the synthetic click that some browsers fire after a drag
+    if (justDraggedRef.current) return;
+    if (pickedId === null) {
+      setPickedId(id);
+    } else if (pickedId === id) {
+      setPickedId(null);
+    } else {
+      moveTile(pickedId, id);
+      setPickedId(null);
+    }
+  };
+
   const handleDragStart = (id: string) => {
     draggedIdRef.current = id;
+    // If a tile was picked via tap, clear it — drag takes over
+    setPickedId(null);
   };
 
   const handleDragOver = (e: React.DragEvent, id: string) => {
@@ -299,12 +337,7 @@ function ArrangeTilesGrid({
       setDragOverId(null);
       return;
     }
-    const newOrder = [...order];
-    const fromIdx = newOrder.indexOf(draggedId);
-    newOrder.splice(fromIdx, 1);
-    const toIdx = newOrder.indexOf(targetId);
-    newOrder.splice(toIdx, 0, draggedId);
-    onReorder(newOrder);
+    moveTile(draggedId, targetId);
     setDragOverId(null);
     draggedIdRef.current = null;
   };
@@ -312,6 +345,9 @@ function ArrangeTilesGrid({
   const handleDragEnd = () => {
     setDragOverId(null);
     draggedIdRef.current = null;
+    // Suppress the click that may follow this dragend
+    justDraggedRef.current = true;
+    setTimeout(() => { justDraggedRef.current = false; }, 50);
   };
 
   return (
@@ -321,6 +357,9 @@ function ArrangeTilesGrid({
         if (!tile) return null;
         const color = SEED_COLORS[tile.seedIndex];
         const isDragOver = dragOverId === id;
+        const isPicked = pickedId === id;
+        // When something else is picked up, dim non-target tiles slightly
+        const isDimmed = pickedId !== null && !isPicked;
         return (
           <div
             key={id}
@@ -329,6 +368,10 @@ function ArrangeTilesGrid({
             onDragOver={(e) => handleDragOver(e, id)}
             onDrop={(e) => handleDrop(e, id)}
             onDragEnd={handleDragEnd}
+            onClick={() => handleClick(id)}
+            role="button"
+            tabIndex={0}
+            aria-pressed={isPicked}
             className={`
               flex items-center justify-center
               border rounded py-3 px-1
@@ -336,10 +379,13 @@ function ArrangeTilesGrid({
               cursor-grab active:cursor-grabbing select-none
               transition-all duration-100
               ${color.bg} ${color.text}
-              ${isDragOver
-                ? "border-white/70 ring-1 ring-white/30 scale-105"
-                : color.border
+              ${isPicked
+                ? "border-white ring-2 ring-white/80 scale-110 z-10 shadow-[0_0_18px_rgba(255,255,255,0.45)]"
+                : isDragOver
+                  ? "border-white/70 ring-1 ring-white/30 scale-105"
+                  : color.border
               }
+              ${isDimmed ? "opacity-60" : ""}
             `}
           >
             {tile.letters}
@@ -951,7 +997,7 @@ export default function CreatePage() {
               ARRANGE STARTING POSITIONS
             </p>
             <p className="text-xs" style={{ color: "var(--green-dark)" }}>
-              Drag tiles to set the order players will see when the puzzle loads.
+              Drag tiles — or tap one then tap another to swap — to set the order players will see when the puzzle loads.
             </p>
             <ArrangeTilesGrid
               tiles={seeds.flatMap((s, si) =>
